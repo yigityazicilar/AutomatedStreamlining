@@ -337,8 +337,8 @@ def parse_instance(
             f_learnt.close()
             # Skip the first line if it is a header
             learnt_clauses: List[List[int]] = [
-                list(map(int, line.strip().split(", ")[1].split()))
-                for line in learnt_lines[1:]
+                list(map(int, line.split()))
+                for line in learnt_lines
             ]
 
         matrices: Dict[str, np.ndarray] = increment_find_matrices(
@@ -351,7 +351,7 @@ def parse_instance(
 
 
 def bin_instance(
-    find_bins_path: Path, shared_variables: Dict[str, Any], number_of_bins: int
+    find_bins_path: Path, shared_variables: List[Dict[str, Any]], number_of_bins: int
 ) -> Dict[str, np.ndarray ]:
     logger.info(f"Binning the following find_bins' {find_bins_path}'")
 

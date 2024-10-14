@@ -1,0 +1,2 @@
+class StageTimeout(Exception):
+    pass

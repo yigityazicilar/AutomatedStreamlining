@@ -1,0 +1,13 @@
+conjure:
+  portfolio_size: 1
+
+solver: 'chuffed'
+
+executor:
+  num_cores: 1
+
+mcts:
+  num_iterations: 200
+
+hydra:
+  num_rounds: 1
