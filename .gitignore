@@ -5,5 +5,6 @@ __pycache__
 *.pyc
 *.spec
 NogoodBinning/problems/*
+NogoodBinning/slurm/*
 nogoodparser
 *.png
