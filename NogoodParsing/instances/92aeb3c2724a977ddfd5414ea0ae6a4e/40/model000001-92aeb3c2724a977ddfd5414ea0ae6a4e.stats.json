@@ -1,0 +1,23 @@
+{"computer": "drang", "conjureVersion": "Conjure v2.5.1 (Repository version 469f8ae (2024-06-20 20:00:03 +0100))",
+ "essence": "/shared/EssenceCatalog/problems/csplib-prob083-Transshipment/Transshipment.essence",
+ "essenceParams":
+     ["/shared/EssenceCatalog/problems/csplib-prob083-Transshipment/params/92aeb3c2724a977ddfd5414ea0ae6a4e.param"],
+ "runsolverInfo": {},
+ "savilerowInfo":
+     {"SATClauses": "566274", "SATVars": "28582", "SavileRowClauseOut": "0", "SavileRowTimeOut": "0",
+      "SavileRowTotalTime": "7.629", "SolverMemOut": "0", "SolverNodes": "222479", "SolverSatisfiable": "1",
+      "SolverTimeOut": "0", "SolverTotalTime": "29.59"},
+ "savilerowLogs":
+     {"exitCode": 0,
+      "stdout":
+          ["Created output file for domain filtering /shared/problems/csplib-prob083-Transshipment/Results/92aeb3c2724a977ddfd5414ea0ae6a4e/40/model000001-92aeb3c2724a977ddfd5414ea0ae6a4e.eprime-minion",
+           "Created output SAT file /shared/problems/csplib-prob083-Transshipment/Results/92aeb3c2724a977ddfd5414ea0ae6a4e/40/model000001-92aeb3c2724a977ddfd5414ea0ae6a4e.eprime-dimacs",
+           "Created information file /shared/problems/csplib-prob083-Transshipment/Results/92aeb3c2724a977ddfd5414ea0ae6a4e/40/model000001-92aeb3c2724a977ddfd5414ea0ae6a4e.eprime-info"]},
+ "savilerowOptions":
+     ["-timelimit 5400 -O2 -finds-to-json -out-finds /shared/problems/csplib-prob083-Transshipment/Results/92aeb3c2724a977ddfd5414ea0ae6a4e/40/92aeb3c2724a977ddfd5414ea0ae6a4e.finds -out-aux /shared/problems/csplib-prob083-Transshipment/Results/92aeb3c2724a977ddfd5414ea0ae6a4e/40/92aeb3c2724a977ddfd5414ea0ae6a4e.aux"],
+ "savilerowVersion": "Savile Row 1.10.1 (Repository Version: 90b9fd5e0 (2024-09-20 14:37:24 +0100))",
+ "solver": "cadical",
+ "solverOptions":
+     ["-t 5400 --seed=40 --output-learnts --learnt-file /shared/problems/csplib-prob083-Transshipment/Results/92aeb3c2724a977ddfd5414ea0ae6a4e/40/92aeb3c2724a977ddfd5414ea0ae6a4e.learnt"],
+ "status": "OK", "timestamp": "2024-09-24T00:20:40.103523364Z", "totalTime": 37.22,
+ "useExistingModels": ["/shared/problems/csplib-prob083-Transshipment/model000001.eprime"]}

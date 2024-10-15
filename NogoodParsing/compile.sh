@@ -1,5 +1,4 @@
 #!/bin/sh
 
-python -m zipapp src -p "/usr/bin/env python3" -o NogoodParsing.pyz
-chmod +x NogoodParsing.pyz
-mv -f NogoodParsing.pyz ../NogoodBinning
+python -m zipapp src -p "/usr/bin/env python3" -o nogoodparser
+chmod +x nogoodparser

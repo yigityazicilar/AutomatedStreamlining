@@ -23,6 +23,7 @@ import numpy as np
 from pathlib import Path
 import logging
 from concurrent.futures import ProcessPoolExecutor, Future, as_completed, wait
+import matplotlib.pyplot as plt
 
 from binning import (
     parse_instance,
@@ -191,6 +192,7 @@ def main():
     }
 
     for variable_name, arr in combined_bins.items():
+        arr = arr / np.sum(arr) * 100
         top_indices_json[variable_name] = find_top_indices(arr, n=5)
 
     try:
@@ -205,6 +207,14 @@ def main():
     except Exception as e:
         logger.error(f"Failed to write top indices to '{output_path}': {e}")
 
+    for variable_name, arr in combined_bins.items():
+        arr = arr / np.sum(arr) * 100
+        # Plot the heatmap
+        plt.figure(figsize=(10, 10))
+        plt.imshow(arr, cmap="hot", interpolation="nearest")
+        plt.colorbar()
+        plt.title(f"Heatmap for {variable_name}")
+        plt.savefig(instance_folder_path.joinpath(f"{variable_name}.png"))
 
 if __name__ == "__main__":
     main()
