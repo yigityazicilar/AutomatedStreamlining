@@ -1,9 +1,9 @@
-[submodule "NogoodBinning/EssenceCatalog"]
-	path = NogoodBinning/EssenceCatalog
-	url = git@github.com:conjure-cp/EssenceCatalog.git
-[submodule "savilerow-main"]
-	path = savilerow-main
-	url = git@github.com:yigityazicilar/savilerow-main.git
 [submodule "cadical-learnt"]
 	path = cadical-learnt
 	url = git@github.com:yigityazicilar/cadical-learnt.git
+[submodule "savilerow-main"]
+	path = savilerow-main
+	url = git@github.com:yigityazicilar/savilerow-main.git
+[submodule "NogoodBinning/EssenceCatalog"]
+	path = NogoodBinning/EssenceCatalog
+	url = git@github.com:conjure-cp/EssenceCatalog.git
