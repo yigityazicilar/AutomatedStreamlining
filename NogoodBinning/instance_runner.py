@@ -61,14 +61,14 @@ def generate_slurm_file(
     out_file = current_dir.joinpath(slurm_stdout, f"{slurm_file_base}.out")
 
     slurm_script = textwrap.dedent(
-        f"""#!/bin/bash
+    f"""#!/bin/bash
         #SBATCH --job-name={problem}_{slurm_file_base}
         #SBATCH -e {error_file}
         #SBATCH -o {out_file}
         #SBATCH --cpus-per-task=2
         #SBATCH --mem=16GB
         #SBATCH --time=03:00:00
-
+        
         timeout {time_limit + 30 * 60} docker run --rm \\
             -v {current_dir}:/shared:z \\
             --platform=linux/amd64 \\
@@ -111,27 +111,15 @@ def submit_job(script_path: Path) -> None:
 
 def model_essence_file(problem: str, essence_file: Path) -> None:
     """Generate the eprime model file from the essence file."""
-    cmd = [
-        "docker",
-        "run",
-        "--rm",
-        "-v",
-        f"{os.getcwd()}:/shared:z",
-        "--platform=linux/amd64",
-        "conjure-dump-nogoods",
-        "conjure",
-        "model",
-        "-q",
-        "af",
-        "-a",
-        "af",
-        "-o",
-        f"/shared/problems/{problem}",
-        f"/shared/{essence_file}",
-    ]
-    subprocess.run(
-        cmd, capture_output=True, text=True
+    cmd = textwrap.dedent(
+    f"""docker run --rm \\
+            -v {os.getcwd()}:/shared:z \\
+            --platform=linux/amd64 \\
+            conjure-dump-nogoods \\
+            conjure model -q af -a af -o /shared/problems/{problem} /shared/{essence_file}
+    """
     )
+    subprocess.run(cmd, capture_output=True, text=True)
 
 
 def main():
