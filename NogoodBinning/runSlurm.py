@@ -16,7 +16,7 @@ def get_queue_size() -> int:
 
 def submit_job(script_path) -> None:
     """Submit a job to Slurm."""
-    subprocess.run(["sbatch", script_path])
+    subprocess.run(["sbatch", script_path], capture_output=True, text=True)
 
 def main():
     arg_parser = argparse.ArgumentParser(description="Submit all Slurm jobs in a directory.")
