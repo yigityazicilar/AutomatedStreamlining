@@ -187,7 +187,7 @@ def main():
 
     slurm_files: Dict[str, List[Path]] = {}
     for problem in problem_classes:
-        print("Generating slurm files for problem {problem}")
+        print(f"Generating slurm files for problem {problem}")
         essence_file = find_essence_file(problem)
         param_files = get_param_files(problem)
         problem_stem = problem.stem
