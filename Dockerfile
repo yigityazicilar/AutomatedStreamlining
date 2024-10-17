@@ -7,5 +7,5 @@ RUN rm /root/.local/bin/cadical
 
 COPY ./savilerow-main/savilerow.jar /root/.local/bin/
 COPY ./savilerow-main/lib/json-20231013.jar /root/.local/bin/lib/
-COPY ./cadical-learnt/bin/cadical-learnt /root/.local/bin/cadical
+COPY ./cadical-learnt/bin/linux/amd64/cadical-learnt /root/.local/bin/cadical
 COPY ./NogoodParsing/nogoodparser /root/.local/bin/
