@@ -186,8 +186,8 @@ def main():
     seeds: List[int] = args.seeds
 
     slurm_files: Dict[str, List[Path]] = {}
-    print("Generating slurm files...")
     for problem in problem_classes:
+        print("Generating slurm files for problem {problem}")
         essence_file = find_essence_file(problem)
         param_files = get_param_files(problem)
         problem_stem = problem.stem
@@ -211,6 +211,9 @@ def main():
 
                 submit_job(file)
                 print(f"Submitted job: {file}")
+            
+            # Potentially Bin the files here after submitting all the jobs for a problem
+
 
 
 if __name__ == "__main__":
