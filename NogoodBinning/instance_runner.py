@@ -61,7 +61,8 @@ def generate_slurm_file(
     out_file = current_dir.joinpath(slurm_stdout, f"{slurm_file_base}.out")
 
     slurm_script = textwrap.dedent(
-        f"""#!/bin/bash
+        f"""
+        #!/bin/bash
         #SBATCH --job-name={problem}_{slurm_file_base}
         #SBATCH -e {error_file}
         #SBATCH -o {out_file}
@@ -82,7 +83,7 @@ def generate_slurm_file(
 
         gzip {learnt_file}
         gzip {aux_file}
-    """
+        """
     )
 
     slurm_file.touch(mode=0o755)
@@ -129,10 +130,8 @@ def model_essence_file(problem: str, essence_file: Path) -> None:
         f"/shared/problems/{problem}",
         f"/shared/{essence_file}",
     ]
-    
-    subprocess.run(
-        cmd, capture_output=True, text=True
-    )
+
+    subprocess.run(cmd, capture_output=True, text=True)
 
 
 def main():
@@ -211,9 +210,8 @@ def main():
 
                 submit_job(file)
                 print(f"Submitted job: {file}")
-            
-            # Potentially Bin the files here after submitting all the jobs for a problem
 
+            # Potentially Bin the files here after submitting all the jobs for a problem
 
 
 if __name__ == "__main__":
