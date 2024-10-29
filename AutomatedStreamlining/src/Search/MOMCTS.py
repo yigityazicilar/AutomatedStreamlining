@@ -1,7 +1,7 @@
 import copy
 import glob
-import os
 from itertools import combinations
+import os
 import time
 
 from Toolchain.SolverFactory import get_solver
@@ -22,7 +22,6 @@ from functools import partial
 from Search.Selection import UCTSelection
 from Util import unwrap
 import concurrent.futures
-from threading import Thread
 
 
 class MOMCTS:
@@ -66,11 +65,9 @@ class MOMCTS:
         # if not self.streamliner_model_stats.results().empty:
         #     self._simulate_existing_streamliners()
 
-    """
-    We have the lattice now, the next component is actually searching and building the lattice
-    using our MCTS
-    """
-
+    #* This threading implementation is an improvement over the initial implementation.
+    #* It allows for the simulation of multiple streamliners at the same time without having to wait for all instances to finish.
+    #* Will need to be removed to compare against the initial implementation.
     def search(self, portfolio_name: str | None = None) -> None:
         iteration = 0
         streamliner_being_run: set[tuple[str, concurrent.futures.Future[tuple[Dict[str, InstanceStats], bool]]]] = set()
@@ -203,8 +200,9 @@ class MOMCTS:
         # Add an edge between the selected node and the newly expanded node
         self._lattice.add_edge(direct_parent_combination_str, new_streamliner_combo_str)
 
-        # [INFO] This would be the lattice way of doing it however we are using a cache to remember the results so we can do it as a tree.
-        # Add an edge between the selected node and the newly expanded node and other possible parent nodes if they exists in the lattice
+
+        #* INFO: This would be the lattice way of doing it however we are using a cache to remember the results so we can do it as a tree.
+        #* Add an edge between the selected node and the newly expanded node and other possible parent nodes if they exists in the lattice
         # for comb in combinations(new_node_combination, len(new_node_combination) - 1):
         #     parent_node_combination_str = (
         #         self._streamliner_state.get_streamliner_repr_from_set(set(comb))
@@ -248,43 +246,7 @@ class MOMCTS:
             output_dir=os.path.join(self.working_directory, "conjure-output"),
         )
         if len(generated_models) == 1:
-            instances_to_run: Set[str] = set()
-            combination_set = set(new_combination.split("-"))
-            if len(combination_set) > 1:
-                for streamliner in combination_set:
-                    if len(instances_to_run) == 0:
-                        instances_to_run.update(
-                            set(
-                                streamliner_results_df.loc[
-                                    (
-                                        streamliner_results_df["Streamliner"]
-                                        == streamliner
-                                    )
-                                    & (
-                                        (streamliner_results_df["Satisfiable"])
-                                        | (streamliner_results_df["TimeOut"])
-                                    )
-                                ]["Instance"]
-                            )
-                        )
-                    else:
-                        instances_to_run.intersection_update(
-                            set(
-                                streamliner_results_df.loc[
-                                    (
-                                        streamliner_results_df["Streamliner"]
-                                        == streamliner
-                                    )
-                                    & (
-                                        (streamliner_results_df["Satisfiable"])
-                                        | (streamliner_results_df["TimeOut"])
-                                    )
-                                ]["Instance"]
-                            )
-                        )
-            else:
-                instances_to_run = set(self.training_instances)
-                
+            instances_to_run: Set[str] = self._get_instances_to_run(new_combination, streamliner_results_df)
             # Instances that have not been run yet. Allows for midway restarts
             instances_to_run.intersection_update(instances_left_to_eval)
 
@@ -329,7 +291,34 @@ class MOMCTS:
         for node in predecessor_nodes:
             self.backprop(node, back_prop_value)
 
-    # [TODO] Think if this is necessary consider the rounds mechanism
+    #* INFO: This function is used to get the instances that need to be run for a given streamliner combination
+    #* It is an improvement over the initial implementation.
+    def _get_instances_to_run(self, streamliner_comb: str, streamliner_results_df: pd.DataFrame) -> Set[str]:
+        combination_set = set(streamliner_comb.split("-"))
+        if len(combination_set) == 1:
+            return set(self.training_instances)
+        
+        def get_valid_instances_for_streamliner(streamliner):
+            """Helper function to get valid instances for a given streamliner."""
+            mask = (
+                (streamliner_results_df["Streamliner"] == streamliner) &
+                (streamliner_results_df["Satisfiable"] | streamliner_results_df["TimeOut"])
+            )
+            return set(streamliner_results_df.loc[mask]["Instance"])
+
+        first_streamliner = next(iter(combination_set))
+        instances_to_run = get_valid_instances_for_streamliner(first_streamliner)
+        
+        # Intersect with remaining streamliners
+        for streamliner in list(combination_set)[1:]:
+            instances_to_run.intersection_update(
+                get_valid_instances_for_streamliner(streamliner)
+            )
+        
+        return instances_to_run
+
+    #* If the run is stopped midway this will simulate the streamliners that have already been run.
+    #? However, this was not needed as we did not stop the run midway.
     def _simulate_existing_streamliners(self):
         tested_streamliners_df = self.streamliner_model_stats.results()
         tested_streamliners = self.streamliner_model_stats.results()[
