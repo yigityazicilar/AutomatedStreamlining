@@ -3,11 +3,14 @@ import gzip
 import json
 import pickle
 import sys
-from typing import Any, Dict, Tuple, List, Union, Callable
+from typing import Any, Dict, TextIO, Tuple, List, Union, Callable
+from matplotlib.pylab import f
 import numpy as np
 from pathlib import Path
 import logging
 import sys
+
+from pyparsing import line
 
 from nogood_parser import Identifier, parse_representation_objects
 
@@ -58,7 +61,7 @@ class CustomJSONEncoder(json.JSONEncoder):
 def increment_find_matrices(
     find_json_path: Path,
     identifier_counts: Dict[int, Counter[Identifier]],
-    learnt_clauses: List[List[int]],
+    learnt_clauses: TextIO,
 ) -> Dict[str, np.ndarray]:
     """
     Increment the find_bins arrays based on the learnt clauses.
@@ -72,13 +75,14 @@ def increment_find_matrices(
     - A dictionary mapping variable names to numpy arrays representing their binned counts.
     """
     increment_map: Counter[Identifier] = Counter()
-    for clause in learnt_clauses:
-        for nogood in clause:
-            count = identifier_counts.get(abs(nogood))
-            if count is None:
-                continue
-
-            increment_map += count
+    while True:
+        line = learnt_clauses.readline()
+        if not line:
+            break
+        for literal in line.strip().split():
+            count = identifier_counts.get(abs(int(literal)))
+            if count is not None:
+                increment_map += count
 
     with find_json_path.open("r") as f_find_json:
         find_json: List[Dict[str, Any]] = json.load(f_find_json)
@@ -333,17 +337,10 @@ def parse_instance(
             instance_folder_path.joinpath(instance, seed, f"{instance}.learnt.gz"),
             "rt",
         ) as f_learnt:
-            learnt_lines: List[str] = f_learnt.readlines()
+            matrices: Dict[str, np.ndarray] = increment_find_matrices(
+                find_path, identifier_counts, f_learnt
+            )
             f_learnt.close()
-            # Skip the first line if it is a header
-            learnt_clauses: List[List[int]] = [
-                list(map(int, line.split()))
-                for line in learnt_lines
-            ]
-
-        matrices: Dict[str, np.ndarray] = increment_find_matrices(
-            find_path, identifier_counts, learnt_clauses
-        )
 
         pickle.dump(matrices, find_bins_path.open("wb"))
 
