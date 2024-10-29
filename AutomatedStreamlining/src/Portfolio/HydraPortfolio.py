@@ -1,3 +1,4 @@
+from pathlib import Path
 import numpy as np
 from Portfolio.HydraEval import HydraEval
 from Search.MOMCTS import MOMCTS
@@ -13,7 +14,7 @@ from Util import unwrap
 class HydraPortfolio:
     def __init__(
         self,
-        essence_spec: str,
+        essence_spec: Path,
         base_model_stats: BaseModelStats,
         streamliner_model_stats: StreamlinerModelStats,
         conf: Dict[str, Any],

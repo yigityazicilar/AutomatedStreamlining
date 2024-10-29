@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 from Toolchain.Conjure import Conjure
 from Toolchain.RunSolver import RunSolver
 from Toolchain.SavileRow import SavileRow
@@ -37,9 +38,9 @@ class Stage:
 class Pipeline:
     def __init__(
         self,
-        eprime_model: str,
-        working_directory: str,
-        instance_dir: str,
+        eprime_model: Path,
+        working_directory: Path,
+        instance_dir: Path,
         essence_param_file: str,
         solver: Solver,
         event: threading.Event,

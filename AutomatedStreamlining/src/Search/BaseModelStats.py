@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 import os, glob, sys
 import pandas as pd
 from Toolchain.InstanceStats import InstanceStats
@@ -12,19 +13,19 @@ import concurrent.futures
 class BaseModelStats:
     def __init__(
         self,
-        base_stats_file: str,
-        working_dir: str,
-        training_instance_dir: str,
+        base_stats_file: Path,
+        working_dir: Path,
+        training_instance_dir: Path,
         solver: Solver,
     ) -> None:
-        self.base_stats_file: str = base_stats_file
+        self.base_stats_file: Path = base_stats_file
         self.training_instances: List[str] = [
             instance.split("/")[-1]
             for instance in glob.glob(f"{training_instance_dir}/*.param")
         ]
         self.training_df: pd.DataFrame = self._load_base_stats(base_stats_file, solver)
-        self.working_dir: str = working_dir
-        self.instance_dir: str = training_instance_dir
+        self.working_dir: Path = working_dir
+        self.instance_dir: Path = training_instance_dir
         self.solver: Solver = solver
         self.conjure: Conjure = Conjure()
 
@@ -55,7 +56,7 @@ class BaseModelStats:
         # logging.info("Callback:", combined_keys)
         self.training_df.to_csv(self.base_stats_file, index=False)
 
-    def _load_base_stats(self, output_file: str, solver: Solver) -> pd.DataFrame:
+    def _load_base_stats(self, output_file: Path, solver: Solver) -> pd.DataFrame:
         if os.path.exists(output_file):
             self.training_df = pd.read_csv(output_file)
             self.training_df = self.training_df[
@@ -98,7 +99,7 @@ class BaseModelStats:
                 + solver.get_stat_names()
             )
 
-    def evaluate_training_instances(self, essence_spec: str, conf: Dict[str, Any]):
+    def evaluate_training_instances(self, essence_spec: Path, conf: Dict[str, Any]):
         # Evaluate the base specification across the training instances
         base_combination = None
         instances_to_eval = set(self.training_instances) - set(

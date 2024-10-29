@@ -1,5 +1,6 @@
 import logging
 import glob
+from pathlib import Path
 import Executor
 from typing import Optional
 
@@ -7,7 +8,7 @@ portfolio_size = 1
 
 
 class Conjure:
-    def generate_streamliners(self, essence_spec: str) -> Optional[tuple[bytes, bytes]]:
+    def generate_streamliners(self, essence_spec: Path) -> Optional[tuple[bytes, bytes]]:
         # return ['conjure', 'streamlining', essence_spec, f'--portfolio-size={self.portfolio_size}', f'-o {output_dir}']
         logging.debug(f"Generating candidate streamliners")
         command = ["conjure", "streamlining", essence_spec]
@@ -20,10 +21,10 @@ class Conjure:
 
     def generate_streamlined_models(
         self,
-        essence_spec: str,
+        essence_spec: Path,
         streamliner_combination: Optional[str],
         output_dir: str,
-    ) -> list[str]:
+    ) -> list[Path]:
         # If this is a streamliner combination (- in the combo), translate to ','
         if not streamliner_combination:
             streamliner_combination = ""
@@ -45,7 +46,7 @@ class Conjure:
         if maybe_res := Executor.callable(command):
             _, _, _ = maybe_res
             
-        return glob.glob(f"{output_dir}/*.eprime")
+        return [Path(eprime) for eprime in glob.glob(f"{output_dir}/*.eprime")]
 
     def translate_essence_param(
         self,

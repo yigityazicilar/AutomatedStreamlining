@@ -2,6 +2,7 @@ import copy
 import glob
 from itertools import combinations
 import os
+from pathlib import Path
 import time
 
 from Toolchain.SolverFactory import get_solver
@@ -28,7 +29,7 @@ class MOMCTS:
 
     def __init__(
         self,
-        essence_spec: str,
+        essence_spec: Path,
         training_results: pd.DataFrame,
         eval: HydraEval,
         conf: Dict[str, Any],

@@ -1,6 +1,7 @@
 import copy
 from functools import partial
 import logging
+from pathlib import Path
 from typing import Dict, Any
 import os
 import numpy as np
@@ -15,7 +16,7 @@ from Util import unwrap
 class PortfolioEval:
     def __init__(
         self,
-        essence_spec: str,
+        essence_spec: Path,
         base_model_stats: BaseModelStats,
         streamliner_stats: StreamlinerModelStats,
         conf: Dict[str, Any],

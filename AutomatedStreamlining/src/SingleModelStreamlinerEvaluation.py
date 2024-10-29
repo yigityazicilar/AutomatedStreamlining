@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 
 import pandas as pd
 from Toolchain.Pipeline import Pipeline
@@ -17,9 +18,9 @@ def _default_err_callback(instance: str, err: str):
 class SingleModelStreamlinerEvaluation:
     def __init__(
         self,
-        model: str,
-        working_directory: str,
-        instance_dir: str,
+        model: Path,
+        working_directory: Path,
+        instance_dir: Path,
         training_instances: Set[str],
         training_stats: pd.DataFrame,
         solver: Solver,
