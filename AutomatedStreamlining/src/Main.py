@@ -12,7 +12,6 @@ import Toolchain.SolverFactory as SolverFactory
 from sklearn.model_selection import KFold
 from enum import Enum
 
-
 # Define the Mode enum
 class Mode(Enum):
     TRAIN = "train"

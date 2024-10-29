@@ -5,7 +5,7 @@ import Util
 
 
 class UCTSelection:
-    exploration_constant: float = 0.1
+    UCT_EXPLORATION_CONSTANT: float = 0.1
 
     def select(
         self, lattice: Lattice, current_combination: Set[str], adjacent_nodes: List[str]
@@ -38,7 +38,7 @@ class UCTSelection:
             if cur_attributes["visited_count"] > 0:
                 uct_values[node] = (
                     cur_attributes["score"] / cur_attributes["visited_count"]
-                ) + self.exploration_constant * math.sqrt(
+                ) + self.UCT_EXPLORATION_CONSTANT * math.sqrt(
                     math.log(parent_node_attributes["visited_count"])
                     / cur_attributes["visited_count"]
                 )

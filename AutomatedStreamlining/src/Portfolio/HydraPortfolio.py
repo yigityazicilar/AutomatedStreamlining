@@ -11,7 +11,6 @@ from Util import unwrap
 
 
 class HydraPortfolio:
-
     def __init__(
         self,
         essence_spec: str,

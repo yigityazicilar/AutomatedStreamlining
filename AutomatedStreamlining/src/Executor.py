@@ -3,7 +3,6 @@ import subprocess
 import time
 from typing import List, Optional
 
-
 def callable(command: List[str]) -> Optional[tuple[bytes, bytes, float]]:
     try:
         logging.info(f"Command {command}")

@@ -4,7 +4,6 @@ from networkx import DiGraph
 
 
 class LatticeNode:
-
     def __eq__(self, o: object) -> bool:
         return (
             isinstance(o, LatticeNode)
@@ -28,7 +27,6 @@ class LatticeNode:
 
 
 class Lattice:
-
     def __init__(self):
         self.__graph: DiGraph = DiGraph()
         # Add the root node of the lattice (the unstreamlined model)

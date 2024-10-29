@@ -8,14 +8,11 @@ import concurrent.futures
 from threading import Event
 from typing import Callable, Dict, Optional, Set
 
-
 def _default_callback(instance: str, data: str):
     logging.info(instance, data)
 
-
 def _default_err_callback(instance: str, err: str):
     logging.exception(err)
-
 
 class SingleModelStreamlinerEvaluation:
     def __init__(

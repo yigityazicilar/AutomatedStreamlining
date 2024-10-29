@@ -7,7 +7,6 @@ from StreamlinerSelection import StreamlinerSelection
 selected_streamliner_groups = ["MatrixByRowBucket-0", "MatrixByRowBucket-9"]
 removed_streamliner_groups = ["MatrixBy"]
 
-
 class StreamlinerState:
     def __init__(self, streamliner_output: AnyStr, streamliners_to_use: StreamlinerSelection):
         self.streamliner_json: Dict[str, Any] = json.loads(streamliner_output)

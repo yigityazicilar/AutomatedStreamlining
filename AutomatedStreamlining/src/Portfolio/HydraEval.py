@@ -15,7 +15,6 @@ MEDIAN_REDUCTION_KEY = "MedianReduction"
 STD_DEV_KEY = "StandardDeviation"
 QUANTILES_KEY = "Quantiles"
 
-
 class HydraEval:
     """
     With the inputted portfolio we need to know how well each streamliner did on each instance as with Hydra

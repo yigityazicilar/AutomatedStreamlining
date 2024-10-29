@@ -5,14 +5,12 @@ from typing import Dict, Any
 import os
 import numpy as np
 
-
 from Toolchain.SolverFactory import get_solver
 from SingleModelStreamlinerEvaluation import SingleModelStreamlinerEvaluation
 from Toolchain.Conjure import Conjure
 from Search.StreamlinerModelStats import StreamlinerModelStats
 from Search.BaseModelStats import BaseModelStats
 from Util import unwrap
-
 
 class PortfolioEval:
     def __init__(

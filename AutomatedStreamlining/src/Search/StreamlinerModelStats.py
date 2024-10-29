@@ -6,7 +6,6 @@ from Toolchain.Solver import Solver
 
 
 class StreamlinerModelStats:
-
     def __init__(self, streamliner_model_stats_file: str, solver: Solver):
         self.streamliner_model_stats_file = streamliner_model_stats_file
         self.streamliner_model_stats: pd.DataFrame = self._load_base_streamliner_stats(
