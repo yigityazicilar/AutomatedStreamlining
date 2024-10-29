@@ -8,5 +8,5 @@ __pycache__
 NogoodBinning/problems/*
 NogoodBinning/slurm/*
 nogoodparser
-automatedstreamlining
+streamline
 *.png
