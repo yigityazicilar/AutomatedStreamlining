@@ -1,4 +1,5 @@
 .vscode
+.venv
 .DS_Store
 *.pyz
 __pycache__
@@ -7,4 +8,5 @@ __pycache__
 NogoodBinning/problems/*
 NogoodBinning/slurm/*
 nogoodparser
+automatedstreamlining
 *.png
