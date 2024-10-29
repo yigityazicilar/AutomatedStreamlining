@@ -72,9 +72,6 @@ class HydraPortfolio:
         # Grab only the results on our current portfolio
         df_sat = df_sat[df_sat["Streamliner"].isin(streamliners_in_portfolio)]
 
-        # logging.info(df_sat.groupby('Streamliner')['Satisfiable'].sum())
-        # logging.info(df_sat.groupby('Instance')['Satisfiable'].sum())
-
         instance_stats_df = df_sat.groupby("Instance").apply(
             lambda x: df_sat.loc[pd.to_numeric(x["solver_time"]).idxmin()]
         )
