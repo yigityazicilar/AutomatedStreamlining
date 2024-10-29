@@ -9,3 +9,4 @@ COPY ./savilerow-main/savilerow.jar /root/.local/bin/
 COPY ./savilerow-main/lib/json-20231013.jar /root/.local/bin/lib/
 COPY ./cadical-learnt/bin/linux/amd64/cadical-learnt /root/.local/bin/cadical
 COPY ./NogoodParsing/nogoodparser /root/.local/bin/
+COPY ./AutomatedStreamlining/streamline /root/.local/bin
