@@ -96,7 +96,7 @@ def main():
         conf = yaml.safe_load(conf_file)
         conf["working_directory"] = working_directory
         conf["instance_directory"] = instance_dir
-        if args.mode != Mode.TEST:
+        if args.mode == Mode.TRAIN:
             conf["streamliners_to_use"] = args.streamliners_to_use
 
     solver: Solver = SolverFactory.get_solver(conf.get("solver"))
