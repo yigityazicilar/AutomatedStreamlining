@@ -1,4 +1,3 @@
-from curses.ascii import SO
 import json
 import logging, argparse, yaml
 from typing import Any, Dict
@@ -69,7 +68,7 @@ def main():
             help="The portfolio that will be used for testing",
         )
 
-    if initial_args.mode != Mode.TEST:
+    if initial_args.mode == Mode.TRAIN:
         parser.add_argument(
             "-s",
             "--streamliners_to_use",
@@ -79,7 +78,6 @@ def main():
             help="Streamliners that should be used",
         )
 
-    if initial_args.mode == Mode.TRAIN:
         parser.add_argument(
             "-f",
             "--fold_num",
