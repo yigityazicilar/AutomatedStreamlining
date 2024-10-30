@@ -101,6 +101,10 @@ class Pipeline:
     def _run_stage(
         self, stage: Stage, runsolver_command: List[str], instance_stats
     ) -> tuple[bytes, bytes]:
+        if self.event.is_set():
+            logging.debug("Flag is set, returning")
+            return b"", b""
+        
         logging.debug(f"Running stage {stage.get_name()}")
         process = subprocess.Popen(
             runsolver_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE
