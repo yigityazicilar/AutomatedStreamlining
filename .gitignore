@@ -12,3 +12,4 @@ streamline
 *.png
 params/
 conjure-output/
+params_filtered/
