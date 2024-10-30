@@ -1,10 +1,10 @@
-from collections import Counter
+from collections import Counter, defaultdict
 import gzip
 import json
 import pickle
 import sys
+import tqdm
 from typing import Any, Dict, TextIO, Tuple, List, Union, Callable
-from matplotlib.pylab import f
 import numpy as np
 from pathlib import Path
 import logging
@@ -69,25 +69,36 @@ def increment_find_matrices(
     Parameters:
     - find_json_path: Path to the JSON file containing variable information.
     - identifier_counts: A dictionary mapping variable IDs to the number of times they are referenced.
-    - learnt_clauses: A list of learnt clauses, each clause is a list of integers representing literals.
+    - learnt_clauses: A text file containing learnt clauses, each clause is a list of integers representing literals.
 
     Returns:
     - A dictionary mapping variable names to numpy arrays representing their binned counts.
     """
-    increment_map: Counter[Identifier] = Counter()
-    while True:
-        line = learnt_clauses.readline()
-        if not line:
-            break
-        for literal in line.strip().split():
-            count = identifier_counts.get(abs(int(literal)))
-            if count is not None:
-                increment_map += count
+    # Count total lines
+    # total_lines = sum(1 for _ in learnt_clauses)
+    # learnt_clauses.seek(0)  # Reset file position
 
+    # Initialize counters
+    increment_map = defaultdict(int)
+    literal_count = defaultdict(int)
+
+    # Process learnt clauses and count literals
+    # for line in tqdm.tqdm(learnt_clauses, total=total_lines, desc="Processing learnt clauses"):
+    for line in learnt_clauses:
+        literals = map(int, line.strip().split())
+        for literal in literals:
+            literal_count[abs(literal)] += 1
+
+    # Update increment_map based on literal counts and identifier_counts
+    for literal, count in literal_count.items():
+        for identifier, val in identifier_counts.get(literal, {}).items():
+            increment_map[identifier] += val * count
+
+    # Load variable information from JSON
     with find_json_path.open("r") as f_find_json:
         find_json: List[Dict[str, Any]] = json.load(f_find_json)
-        f_find_json.close()
 
+    # Initialize find_bins and dimension data
     find_bins: Dict[str, np.ndarray] = {}
     dimension_data: Dict[str, List[Tuple[int, int]]] = {}
     for find_var in find_json:
@@ -97,18 +108,16 @@ def increment_find_matrices(
         find_bins[name] = create_numpy_array(find_var)
         dimension_data[name] = get_dimension_bounds(find_var)
 
+    # Update find_bins based on increment_map
     for identifier, increment in increment_map.items():
         if identifier.name in find_bins:
             mapped_indices: Tuple[int, ...] = tuple(
-                [
-                    idx - dimension_data[identifier.name][i][0]
-                    for i, idx in enumerate(identifier.indices)
-                ]
+                idx - dimension_data[identifier.name][i][0]
+                for i, idx in enumerate(identifier.indices)
             )
             find_bins[identifier.name][mapped_indices] += increment
 
     return find_bins
-
 
 def map_values_to_nd_bins(matrix: np.ndarray, number_of_bins: int) -> np.ndarray:
     """
@@ -320,10 +329,6 @@ def parse_instance(
     instance: str,
     seed: str,
 ) -> None:
-    logger.info(f"Starting to parse instance '{instance}'.")
-    _, identifier_counts = parse_representation_objects(aux_path, find_path)
-    logger.info(f"Parsing for instance '{instance}' completed")
-
     find_bins_path = instance_folder_path.joinpath(
         instance, seed, f"{instance}.find_bins"
     )
@@ -332,6 +337,9 @@ def parse_instance(
         logger.info(f"Find bins already exist at '{find_bins_path}'. Skipping.")
         return
     else:
+        logger.info(f"Starting to parse instance '{instance}'.")
+        _, identifier_counts = parse_representation_objects(aux_path, find_path)
+        logger.info(f"Parsing for instance '{instance}' completed")
         logger.info(f"Binning seed '{seed}' of instance '{instance}'.")
         with gzip.open(
             instance_folder_path.joinpath(instance, seed, f"{instance}.learnt.gz"),

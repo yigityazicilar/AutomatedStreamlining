@@ -132,7 +132,7 @@ def main():
     )
 
     # Parse one aux file from each instance to get the variable representations as the same representation is shared across all seeds.
-    with ProcessPoolExecutor(max_workers=64) as executor:
+    with ProcessPoolExecutor(max_workers=1) as executor:
         parsing_futures: List[Future] = []
         for i, (aux_path, find_path) in enumerate(parse_representation_object_args):
             for seed in seeds:
@@ -160,7 +160,7 @@ def main():
                 sys.exit(1)
 
     combined_bins: Dict[str, np.ndarray] = {}
-    with ProcessPoolExecutor(max_workers=64) as executor:
+    with ProcessPoolExecutor(max_workers=1) as executor:
         binning_futures: List[Future] = []
         for instance in instance_dirs:
             for seed in seeds:
