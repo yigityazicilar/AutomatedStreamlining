@@ -3,6 +3,7 @@ import glob
 from itertools import combinations
 import os
 from pathlib import Path
+import signal
 import time
 
 from Toolchain.SolverFactory import get_solver
@@ -73,6 +74,8 @@ class MOMCTS:
         iteration = 0
         streamliner_being_run: set[tuple[str, concurrent.futures.Future[tuple[Dict[str, InstanceStats], bool]]]] = set()
         thread_count = self.conf["executor"]["num_cores"]
+        signal.signal(signal.SIGINT, self.signal_handler)
+        signal.signal(signal.SIGTERM, self.signal_handler)
         while True:
             if len(streamliner_being_run) > 0:
                 to_remove = set()
@@ -116,7 +119,7 @@ class MOMCTS:
                 for remove in to_remove:
                     streamliner_being_run.remove(remove)
          
-            print(f"Current queue size {self.executor._work_queue.qsize()}", flush=True)
+            logging.info(f"Current queue size {self.executor._work_queue.qsize()}")
             if self.executor._work_queue.qsize() <= thread_count:
                 logging.info(f"Adding new streamliners to the queue")
                 current_combination, possible_adjacent_streamliners = self.selection()
@@ -317,6 +320,11 @@ class MOMCTS:
             )
         
         return instances_to_run
+    
+    def signal_handler(self, sig, frame):
+        logging.info(f"Caught signal shutting down process pools...")
+        self.executor.shutdown(wait=False, cancel_futures=True)
+        self.eval_executor.shutdown(wait=False, cancel_futures=True)
 
     #* If the run is stopped midway this will simulate the streamliners that have already been run.
     #? However, this was not needed as we did not stop the run midway.
