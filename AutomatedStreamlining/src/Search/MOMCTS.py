@@ -325,6 +325,7 @@ class MOMCTS:
         logging.info(f"Caught signal shutting down process pools...")
         self.executor.shutdown(wait=False, cancel_futures=True)
         self.eval_executor.shutdown(wait=False, cancel_futures=True)
+        sys.exit(0)
 
     #* If the run is stopped midway this will simulate the streamliners that have already been run.
     #? However, this was not needed as we did not stop the run midway.
