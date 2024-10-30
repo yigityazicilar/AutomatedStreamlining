@@ -67,7 +67,6 @@ class MOMCTS:
         self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=conf["executor"]["num_cores"])
         self.eval_executor = concurrent.futures.ThreadPoolExecutor()
         self.event = threading.Event()
-        self.running = True
         # if not self.streamliner_model_stats.results().empty:
         #     self._simulate_existing_streamliners()
 
@@ -78,8 +77,6 @@ class MOMCTS:
         iteration = 0
         streamliner_being_run: set[tuple[str, concurrent.futures.Future[tuple[Dict[str, InstanceStats], bool]]]] = set()
         thread_count = self.conf["executor"]["num_cores"]
-        signal.signal(signal.SIGINT, self.signal_handler)
-        signal.signal(signal.SIGTERM, self.signal_handler)
         while not self.event.is_set():
             if len(streamliner_being_run) > 0:
                 to_remove = set()
@@ -325,13 +322,7 @@ class MOMCTS:
             )
         
         return instances_to_run
-    
-    def signal_handler(self, sig, frame):
-        print(f"Caught signal shutting down process pools...")
-        self.executor.shutdown(wait=False, cancel_futures=True)
-        self.eval_executor.shutdown(wait=False, cancel_futures=True)
-        self.event.set()
-        
+
     #* If the run is stopped midway this will simulate the streamliners that have already been run.
     #? However, this was not needed as we did not stop the run midway.
     def _simulate_existing_streamliners(self):
