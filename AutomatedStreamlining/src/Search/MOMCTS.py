@@ -80,7 +80,7 @@ class MOMCTS:
         thread_count = self.conf["executor"]["num_cores"]
         signal.signal(signal.SIGINT, self.signal_handler)
         signal.signal(signal.SIGTERM, self.signal_handler)
-        while self.running:
+        while not self.event.is_set():
             if len(streamliner_being_run) > 0:
                 to_remove = set()
                 # Check if one is finished and evaluate it. Increment iteration count.
@@ -331,8 +331,7 @@ class MOMCTS:
         self.executor.shutdown(wait=False, cancel_futures=True)
         self.eval_executor.shutdown(wait=False, cancel_futures=True)
         self.event.set()
-        self.running = False
-
+        
     #* If the run is stopped midway this will simulate the streamliners that have already been run.
     #? However, this was not needed as we did not stop the run midway.
     def _simulate_existing_streamliners(self):

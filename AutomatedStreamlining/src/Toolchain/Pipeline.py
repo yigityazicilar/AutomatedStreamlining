@@ -101,10 +101,6 @@ class Pipeline:
     def _run_stage(
         self, stage: Stage, runsolver_command: List[str], instance_stats
     ) -> tuple[bytes, bytes]:
-        if self.event.is_set():
-            logging.debug("Flag is set, returning")
-            return b"", b""
-        
         logging.debug(f"Running stage {stage.get_name()}")
         process = subprocess.Popen(
             runsolver_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE
@@ -135,6 +131,9 @@ class Pipeline:
                 return outs, errs
 
     def _call(self, stage, instance_stats):
+        if self.event.is_set():
+            logging.debug("Event is set, skipping stage")
+            return
         command = stage.stage_callable(*stage.args)
         runsolver: RunSolver = RunSolver(threading.get_ident(), stage.get_name())
         runsolver_command = runsolver.generate_runsolver_command(

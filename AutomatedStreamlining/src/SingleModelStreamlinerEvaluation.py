@@ -86,6 +86,9 @@ class SingleModelStreamlinerEvaluation:
             for instance in mappings.keys()
         }
         for future in concurrent.futures.as_completed(futures):
+            if self.event.is_set():
+                break
+            
             instance: str = futures[future]
             try:
                 data: InstanceStats = future.result()
