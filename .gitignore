@@ -10,4 +10,5 @@ NogoodBinning/slurm/*
 nogoodparser
 streamline
 *.png
-params/*
+params/
+conjure-output/
