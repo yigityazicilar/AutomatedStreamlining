@@ -153,6 +153,7 @@ def train(fold_num: int, working_directory: Path, instance_dir: Path, essence_sp
                 essence_spec, baseModelStats, streamlinerModelStats, conf
             )
 
+    os.makedirs(working_directory.joinpath("portfolios"), exist_ok=True)
     portfolio_builder.build_portfolio(f"portfolios/PortfolioFold{fold_num}.json")
 
 def test(portfolio_loc: Path, working_directory: Path, instance_dir: Path, essence_spec: Path, conf: Dict[str, Any], solver: Solver):
