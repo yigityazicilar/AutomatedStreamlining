@@ -1,9 +1,11 @@
+from concurrent.futures import thread
 import copy
 import glob
 from itertools import combinations
 import os
 from pathlib import Path
 import signal
+import threading
 import time
 
 from Toolchain.SolverFactory import get_solver
@@ -64,6 +66,7 @@ class MOMCTS:
         )
         self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=conf["executor"]["num_cores"])
         self.eval_executor = concurrent.futures.ThreadPoolExecutor()
+        self.event = threading.Event()
         self.running = True
         # if not self.streamliner_model_stats.results().empty:
         #     self._simulate_existing_streamliners()
@@ -138,10 +141,6 @@ class MOMCTS:
                 return
 
             time.sleep(5)
-
-        if self.running == False:
-            time.sleep(5)
-            sys.exit(0)
 
     def selection(self) -> Tuple[Set[str], Set[str]]:
         logging.debug("------SELECTION-----")
@@ -272,6 +271,7 @@ class MOMCTS:
                 self.executor,
                 None,
                 lambda x: x * 1.5,
+                self.event
             )
             callback = partial(self.streamliner_model_stats.callback, new_combination)
             # We now need to parse these results into some format that we can use as a reference point
@@ -330,6 +330,7 @@ class MOMCTS:
         print(f"Caught signal shutting down process pools...")
         self.executor.shutdown(wait=False, cancel_futures=True)
         self.eval_executor.shutdown(wait=False, cancel_futures=True)
+        self.event.set()
         self.running = False
 
     #* If the run is stopped midway this will simulate the streamliners that have already been run.

@@ -1,5 +1,6 @@
 import logging
 from pathlib import Path
+import threading
 
 import pandas as pd
 from Toolchain.Pipeline import Pipeline
@@ -26,7 +27,8 @@ class SingleModelStreamlinerEvaluation:
         solver: Solver,
         executor: concurrent.futures.ThreadPoolExecutor,
         total_time: Optional[float],
-        time_func: Callable[[float], float]
+        time_func: Callable[[float], float],
+        event: threading.Event
     ) -> None:
         self.model = model
         self.working_directory = working_directory
@@ -37,6 +39,7 @@ class SingleModelStreamlinerEvaluation:
         self.executor = executor
         self.total_time: Optional[float] = total_time
         self.time_func = time_func
+        self.event = event
 
     def generate_pipeline(self, training_instance: str):
         logging.debug(
@@ -60,7 +63,7 @@ class SingleModelStreamlinerEvaluation:
             self.instance_dir,
             training_instance,
             self.solver,
-            Event(),
+            self.event,
             total_time,
         )
 
