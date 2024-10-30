@@ -11,7 +11,10 @@ def main():
         "-c", "--csv", type=Path, required=True, help="Path to the csv file"
     )
     args.add_argument(
-        "-t", "--time", type=int, required=True, help="Total time threshold"
+        "-l", "--lower-time-bound", type=int, required=True, help="Lower time threshold"
+    )
+    args.add_argument(
+        "-u", "--upper-time-bound", type=int, required=True, help="Upper time threshold"
     )
     args.add_argument("-o", "--output", type=Path, required=True, help="Output file")
     args.add_argument(
@@ -28,7 +31,10 @@ def main():
 
     # Filter instances based on total time
     base_model_results = base_model_results[
-        base_model_results["TotalTime"] >= args.time
+        base_model_results["TotalTime"] >= args.lower_time_bound
+    ]
+    base_model_results = base_model_results[
+        base_model_results["TotalTime"] <= args.upper_time_bound
     ]
 
     # Save the filtered instances

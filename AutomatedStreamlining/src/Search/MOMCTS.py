@@ -267,7 +267,7 @@ class MOMCTS:
                 get_solver(unwrap(self.conf.get("solver"))),
                 self.executor,
                 None,
-                lambda x: x * 1.5,
+                lambda x: x * 1.05,
                 self.event
             )
             callback = partial(self.streamliner_model_stats.callback, new_combination)
