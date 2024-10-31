@@ -1,5 +1,6 @@
 import json
 import logging, argparse, yaml
+import random
 from typing import Any, Dict
 from pathlib import Path
 import shutil
@@ -117,13 +118,26 @@ def train(fold_num: int, working_directory: Path, instance_dir: Path, essence_sp
     train_set, test_set = list(train_test_iterator)[fold_num]
     train_dir = Path(os.path.join(instance_dir, "Train"))
     test_dir = Path(os.path.join(instance_dir, "Test"))
+    validation_dir = Path(os.path.join(instance_dir, "Validation"))
     os.makedirs(train_dir, exist_ok=True)
+    os.makedirs(validation_dir, exist_ok=True)
     os.makedirs(test_dir, exist_ok=True)
+
+    random.seed(42)
+    validation_set = set(random.sample(list(train_set), len(train_set) // 2))
+    train_set = set(train_set) - validation_set
+    
 
     for j in train_set:
         shutil.copyfile(
                     os.path.join(instance_dir, instances[j]),
                     os.path.join(train_dir, instances[j]),
+                )
+        
+    for j in validation_set:
+        shutil.copyfile(
+                    os.path.join(instance_dir, instances[j]),
+                    os.path.join(validation_dir, instances[j]),
                 )
 
     for j in test_set:
