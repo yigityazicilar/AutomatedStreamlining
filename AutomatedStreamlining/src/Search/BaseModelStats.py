@@ -1,6 +1,7 @@
 import logging
 from pathlib import Path
 import os, glob, sys
+import threading
 import pandas as pd
 from Toolchain.InstanceStats import InstanceStats
 from SingleModelStreamlinerEvaluation import SingleModelStreamlinerEvaluation
@@ -28,6 +29,7 @@ class BaseModelStats:
         self.instance_dir: Path = training_instance_dir
         self.solver: Solver = solver
         self.conjure: Conjure = Conjure()
+        self.event = threading.Event()
 
     def _callback(self, instance: str, result: InstanceStats) -> None:
         logging.debug(f"Callback for {instance} run. Stage {result.get_stages()}.")
@@ -121,7 +123,8 @@ class BaseModelStats:
             self.solver,
             concurrent.futures.ThreadPoolExecutor(max_workers=conf["executor"]["num_cores"]),
             3600 * 1.5,
-            lambda x: x
+            lambda x: x,
+            self.event
         )
         streamlinerEval.execute(self._callback, lambda _, err: logging.exception(err))
 

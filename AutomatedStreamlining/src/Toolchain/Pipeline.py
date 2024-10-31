@@ -9,7 +9,7 @@ import threading
 import subprocess
 from subprocess import TimeoutExpired
 import os, math
-from typing import Callable, List
+from typing import Callable, List, Optional
 from Toolchain.Solver import Solver
 from functools import partial
 
@@ -45,6 +45,7 @@ class Pipeline:
         solver: Solver,
         event: threading.Event,
         total_time: float,
+        streamliners: Optional[str] = None,
     ) -> None:
         self.eprime_model = eprime_model
         self.working_directory = working_directory
@@ -53,9 +54,14 @@ class Pipeline:
         self.total_time = total_time
         self.essence_param_file = essence_param_file
         self.raw_instance = os.path.basename(essence_param_file).split(".")[0]
-        self.output_eprime_param = (
-            f"{raw_eprime_model}-{self.raw_instance}.eprime-param"
-        )
+        if streamliners:
+            self.output_eprime_param = (
+                f"{raw_eprime_model}-{self.raw_instance}-{streamliners}.eprime-param"
+            )
+        else:
+            self.output_eprime_param = (
+                f"{raw_eprime_model}-{self.raw_instance}.eprime-param"
+            )
         self.savilerow_output = solver.get_savilerow_output_file(
             self.eprime_model, self.raw_instance
         )

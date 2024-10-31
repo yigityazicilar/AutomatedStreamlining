@@ -101,7 +101,7 @@ class RunSolver:
             for matcher in patterns:
                 if matcher[1].match(line):
                     match = matcher[1].match(line)
-                    matches[matcher[0]] = match.group(1)
+                    matches[matcher[0]] = match.group(1) # type: ignore
                     break
         try:
             to_return = RunSolverStats(

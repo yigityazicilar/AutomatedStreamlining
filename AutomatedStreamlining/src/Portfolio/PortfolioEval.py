@@ -2,6 +2,8 @@ import copy
 from functools import partial
 import logging
 from pathlib import Path
+import threading
+from turtle import st
 from typing import Dict, Any
 import os
 import numpy as np
@@ -29,6 +31,7 @@ class PortfolioEval:
         self.conjure: Conjure = Conjure()
         self.working_directory = unwrap(conf.get("working_directory"))
         self.instance_directory = unwrap(conf.get("instance_directory"))
+        self.event = threading.Event()
 
     def evaluate(self):
         instances_to_eval: set[str] = set(self.base_model_stats["Instance"].unique())
@@ -42,7 +45,7 @@ class PortfolioEval:
             generated_models = self.conjure.generate_streamlined_models(
                 self.essence_spec,
                 streamliner,
-                output_dir=os.path.join(self.working_directory, "conjure-output"),
+                output_dir=os.path.join(self.working_directory, "conjure-output", streamliner),
             )
             if len(generated_models) == 1:
                 logging.info(generated_models)
@@ -56,6 +59,8 @@ class PortfolioEval:
                     unwrap(self.conf.get("executor")).get("num_cores"),
                     None,
                     lambda x: x,
+                    self.event,
+                    streamliner
                 )
 
                 callback = partial(self.streamliner_stats.callback, streamliner)

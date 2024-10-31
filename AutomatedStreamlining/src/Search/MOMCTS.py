@@ -248,7 +248,7 @@ class MOMCTS:
         generated_models = self.conjure.generate_streamlined_models(
             self.essence_spec,
             new_combination,
-            output_dir=os.path.join(self.working_directory, "conjure-output"),
+            output_dir=os.path.join(self.working_directory, "conjure-output", new_combination),
         )
         if len(generated_models) == 1:
             instances_to_run: Set[str] = self._get_instances_to_run(new_combination, streamliner_results_df)
@@ -268,7 +268,8 @@ class MOMCTS:
                 self.executor,
                 None,
                 lambda x: x * 1.05,
-                self.event
+                self.event,
+                new_combination,
             )
             callback = partial(self.streamliner_model_stats.callback, new_combination)
             # We now need to parse these results into some format that we can use as a reference point

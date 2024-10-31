@@ -28,7 +28,8 @@ class SingleModelStreamlinerEvaluation:
         executor: concurrent.futures.ThreadPoolExecutor,
         total_time: Optional[float],
         time_func: Callable[[float], float],
-        event: threading.Event
+        event: threading.Event,
+        streamliner_combination: Optional[str] = None,
     ) -> None:
         self.model = model
         self.working_directory = working_directory
@@ -40,6 +41,7 @@ class SingleModelStreamlinerEvaluation:
         self.total_time: Optional[float] = total_time
         self.time_func = time_func
         self.event = event
+        self.streamliner_combination = streamliner_combination
 
     def generate_pipeline(self, training_instance: str):
         logging.debug(
@@ -65,6 +67,7 @@ class SingleModelStreamlinerEvaluation:
             self.solver,
             self.event,
             total_time,
+            self.streamliner_combination,
         )
 
     def execute(
