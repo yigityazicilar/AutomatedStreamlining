@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from Toolchain.InstanceStats import InstanceStats
 
@@ -20,7 +20,7 @@ class Solver:
         return self.savilerow_output_flag
 
     @abstractmethod
-    def get_savilerow_output_file(self, eprime_model, raw_instance) -> str:
+    def get_savilerow_output_file(self, eprime_model, raw_instance, streamliner: Optional[str] = None ) -> str:
         pass
 
     @abstractmethod

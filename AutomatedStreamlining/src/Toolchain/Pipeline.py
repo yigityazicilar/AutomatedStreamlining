@@ -63,7 +63,7 @@ class Pipeline:
                 f"{raw_eprime_model}-{self.raw_instance}.eprime-param"
             )
         self.savilerow_output = solver.get_savilerow_output_file(
-            self.eprime_model, self.raw_instance
+            self.eprime_model, self.raw_instance, streamliners
         )
 
         # logging.info(self.savilerow_output)

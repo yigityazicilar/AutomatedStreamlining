@@ -1,6 +1,7 @@
 import logging
+from optparse import Option
 import pathlib
-from typing import Dict, List
+from typing import Dict, List, Optional
 import os
 from Toolchain.InstanceStats import InstanceStats
 from Toolchain.Solver import Solver
@@ -10,8 +11,10 @@ class Chuffed(Solver):
     def __init__(self):
         Solver.__init__(self, "chuffed", "chuffed", "-out-flatzinc")
 
-    def get_savilerow_output_file(self, eprime_model, raw_instance) -> str:
+    def get_savilerow_output_file(self, eprime_model, raw_instance, streamliner: Optional[str] = None) -> str:
         raw_eprime_model = os.path.basename(eprime_model).split(".")[0]
+        if streamliner:
+            return f"{raw_eprime_model}-{raw_instance}-{streamliner}.fzn"
         return f"{raw_eprime_model}-{raw_instance}.fzn"
 
     def execute(self, output_file: str) -> List[str]:

@@ -34,8 +34,10 @@ class Cadical(Solver):
     def __init__(self):
         Solver.__init__(self, "cadical", "sat", "-out-sat")
 
-    def get_savilerow_output_file(self, eprime_model: str, raw_instance: str) -> str:
+    def get_savilerow_output_file(self, eprime_model: str, raw_instance: str, streamliner: Optional[str] = None) -> str:
         raw_eprime_model = os.path.basename(eprime_model).split(".")[0]
+        if streamliner:
+            return f"{raw_eprime_model}-{raw_instance}-{streamliner}.dimacs"
         return f"{raw_eprime_model}-{raw_instance}.dimacs"
 
     def execute(self, output_file: str) -> List[str]:
