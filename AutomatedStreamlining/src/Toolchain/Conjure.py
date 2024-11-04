@@ -42,9 +42,7 @@ class Conjure:
             "-o",
             output_dir,
         ]
-        logging.debug(
-            f"Building streamlined models for {streamliner_combination}: {" ".join(command)}"
-        )
+        logging.debug(f"Building streamlined models for {streamliner_combination}.")
         if maybe_res := Executor.callable(command):
             _, _, _ = maybe_res
 
