@@ -67,6 +67,7 @@ class MOMCTS:
         self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=conf["executor"]["num_cores"])
         self.eval_executor = concurrent.futures.ThreadPoolExecutor()
         self.event = threading.Event()
+
         # if not self.streamliner_model_stats.results().empty:
         #     self._simulate_existing_streamliners()
 
@@ -75,13 +76,14 @@ class MOMCTS:
     #* Will need to be removed to compare against the initial implementation.
     def search(self, portfolio_name: str | None = None) -> None:
         iteration = 0
-        streamliner_being_run: set[tuple[str, concurrent.futures.Future[tuple[Dict[str, InstanceStats], bool]]]] = set()
+        maximum_iteration = unwrap(self.conf.get("mcts")).get("num_iterations")
+        streamliners_being_run: set[tuple[str, concurrent.futures.Future[tuple[Dict[str, InstanceStats], bool]]]] = set()
         thread_count = self.conf["executor"]["num_cores"]
         while not self.event.is_set():
-            if len(streamliner_being_run) > 0:
+            if len(streamliners_being_run) > 0:
                 to_remove = set()
                 # Check if one is finished and evaluate it. Increment iteration count.
-                for streamliner, future in streamliner_being_run:
+                for streamliner, future in streamliners_being_run:
                     logging.info(f"Checking if streamliner {streamliner} finished running.")
                     if future.done():
                         try:
@@ -114,27 +116,27 @@ class MOMCTS:
                         else:
                             iteration += 1
                             logging.info(
-                                f"Iteration {iteration} out of {unwrap(self.conf.get('mcts')).get('num_iterations')}"
+                                f"Iteration {iteration} out of {maximum_iteration}"
                             )
                             
                 for remove in to_remove:
-                    streamliner_being_run.remove(remove)
+                    streamliners_being_run.remove(remove)
          
             logging.info(f"Current queue size {self.executor._work_queue.qsize()}")
-            if self.executor._work_queue.qsize() <= thread_count:
+            if self.executor._work_queue.qsize() <= thread_count and iteration < maximum_iteration:
                 logging.info(f"Adding new streamliners to the queue")
                 current_combination, possible_adjacent_streamliners = self.selection()
                 new_combination_added: str = self.expansion(
                     current_combination, list(possible_adjacent_streamliners)
                 )
                 
-                if new_combination_added in streamliner_being_run:
+                if new_combination_added in streamliners_being_run:
                     continue
 
                 simulation_future = self.eval_executor.submit(self.simulation, new_combination_added)
-                streamliner_being_run.add((new_combination_added, simulation_future))
+                streamliners_being_run.add((new_combination_added, simulation_future))
                     
-            if iteration >= unwrap(self.conf.get("mcts")).get("num_iterations"):
+            if iteration >= maximum_iteration and len(streamliners_being_run) == 0:
                 return
 
             time.sleep(5)
@@ -204,7 +206,6 @@ class MOMCTS:
 
         # Add an edge between the selected node and the newly expanded node
         self._lattice.add_edge(direct_parent_combination_str, new_streamliner_combo_str)
-
 
         #* INFO: This would be the lattice way of doing it however we are using a cache to remember the results so we can do it as a tree.
         #* Add an edge between the selected node and the newly expanded node and other possible parent nodes if they exists in the lattice
