@@ -232,11 +232,16 @@ class MOMCTS:
         streamliner_results_df = self.streamliner_model_stats.results()
         logging.info(f"New combo {new_combination}")
 
-        instances_left_to_eval = self.training_instances - set(
+        instances_left_to_eval: Set[Path] = set()
+        instances_in_results: Set[str] = set(
             streamliner_results_df[
                 streamliner_results_df["Streamliner"] == new_combination
             ]["Instance"]
         )
+
+        for instance in self.training_instances:
+            if instance.name not in instances_in_results:
+                instances_left_to_eval.add(instance)
 
         # Check to see if we have already encountered this streamliner before
         if len(instances_left_to_eval) == 0:
