@@ -4,7 +4,6 @@ import glob
 from itertools import combinations
 import os
 from pathlib import Path
-import signal
 import threading
 import time
 
@@ -75,13 +74,13 @@ class MOMCTS:
     #* Will need to be removed to compare against the initial implementation.
     def search(self, portfolio_name: str | None = None) -> None:
         iteration = 0
-        streamliner_being_run: set[tuple[str, concurrent.futures.Future[tuple[Dict[str, InstanceStats], bool]]]] = set()
+        streamliners_being_run: set[tuple[str, concurrent.futures.Future[tuple[Dict[str, InstanceStats], bool]]]] = set()
         thread_count = self.conf["executor"]["num_cores"]
         while not self.event.is_set():
-            if len(streamliner_being_run) > 0:
+            if len(streamliners_being_run) > 0:
                 to_remove = set()
                 # Check if one is finished and evaluate it. Increment iteration count.
-                for streamliner, future in streamliner_being_run:
+                for streamliner, future in streamliners_being_run:
                     logging.info(f"Checking if streamliner {streamliner} finished running.")
                     if future.done():
                         try:
@@ -118,21 +117,21 @@ class MOMCTS:
                             )
                             
                 for remove in to_remove:
-                    streamliner_being_run.remove(remove)
+                    streamliners_being_run.remove(remove)
          
             logging.info(f"Current queue size {self.executor._work_queue.qsize()}")
-            if self.executor._work_queue.qsize() <= thread_count:
+            if len(streamliners_being_run) == 0:
                 logging.info(f"Adding new streamliners to the queue")
                 current_combination, possible_adjacent_streamliners = self.selection()
                 new_combination_added: str = self.expansion(
                     current_combination, list(possible_adjacent_streamliners)
                 )
                 
-                if new_combination_added in streamliner_being_run:
+                if new_combination_added in streamliners_being_run:
                     continue
 
                 simulation_future = self.eval_executor.submit(self.simulation, new_combination_added)
-                streamliner_being_run.add((new_combination_added, simulation_future))
+                streamliners_being_run.add((new_combination_added, simulation_future))
                     
             if iteration >= unwrap(self.conf.get("mcts")).get("num_iterations"):
                 return
@@ -251,9 +250,11 @@ class MOMCTS:
             output_dir=os.path.join(self.working_directory, "conjure-output", new_combination),
         )
         if len(generated_models) == 1:
-            instances_to_run: Set[str] = self._get_instances_to_run(new_combination, streamliner_results_df)
+            # instances_to_run: Set[str] = self._get_instances_to_run(new_combination, streamliner_results_df)
             # Instances that have not been run yet. Allows for midway restarts
-            instances_to_run.intersection_update(instances_left_to_eval)
+            # instances_to_run.intersection_update(instances_left_to_eval)
+            
+            instances_to_run = instances_left_to_eval
 
             if len(instances_to_run) == 0:
                 return {}, False
