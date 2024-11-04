@@ -2,6 +2,7 @@ import logging
 from pathlib import Path
 import os, glob, sys
 import threading
+from matplotlib.pylab import f
 import pandas as pd
 from Toolchain.InstanceStats import InstanceStats
 from SingleModelStreamlinerEvaluation import SingleModelStreamlinerEvaluation
@@ -20,10 +21,14 @@ class BaseModelStats:
         solver: Solver,
     ) -> None:
         self.base_stats_file: Path = base_stats_file
-        self.training_instances: List[str] = [
-            instance.split("/")[-1]
-            for instance in glob.glob(f"{training_instance_dir}/*.param")
+        self.training_instance_paths: List[Path] = [
+            Path(instance)
+            for instance in glob.glob(str(training_instance_dir / "*.param"))
         ]
+        self.training_instances: List[str] = [
+            instance.stem for instance in self.training_instance_paths
+        ]
+
         self.training_df: pd.DataFrame = self._load_base_stats(base_stats_file, solver)
         self.working_dir: Path = working_dir
         self.instance_dir: Path = training_instance_dir
@@ -31,11 +36,11 @@ class BaseModelStats:
         self.conjure: Conjure = Conjure()
         self.event = threading.Event()
 
-    def _callback(self, instance: str, result: InstanceStats) -> None:
+    def _callback(self, instance: Path, result: InstanceStats) -> None:
         logging.debug(f"Callback for {instance} run. Stage {result.get_stages()}.")
         instance_stages = result.get_stages()
         combined_keys: Dict[str, str | bool | int | float] = {
-            "Instance": instance.split("/")[-1],
+            "Instance": instance.stem,
             "TotalTime": result.total_time(),
             "Satisfiable": result.satisfiable(),
             "Killed": result.killed(),
@@ -104,27 +109,39 @@ class BaseModelStats:
     def evaluate_training_instances(self, essence_spec: Path, conf: Dict[str, Any]):
         # Evaluate the base specification across the training instances
         base_combination = None
-        instances_to_eval = set(self.training_instances) - set(
+        instances_to_eval_str = set(self.training_instances) - set(
             self.training_df["Instance"]
         )
+        instances_to_eval = set()
+        for instance in instances_to_eval_str:
+            instances_to_eval.add(
+                next(
+                    instance_path
+                    for instance_path in self.training_instance_paths
+                    if instance in instance_path.stem
+                )
+            )
+
         if not instances_to_eval:
             return self.training_df
 
         generated_models = self.conjure.generate_streamlined_models(
-            essence_spec, base_combination, output_dir=os.path.join(self.working_dir, "conjure-output")
+            essence_spec,
+            base_combination,
+            output_dir=self.working_dir / "conjure-output",
         )
-        
+
         streamlinerEval = SingleModelStreamlinerEvaluation(
             generated_models[0],
-            self.working_dir,
-            self.instance_dir,
             instances_to_eval,
             pd.DataFrame(),
             self.solver,
-            concurrent.futures.ThreadPoolExecutor(max_workers=conf["executor"]["num_cores"]),
+            concurrent.futures.ThreadPoolExecutor(
+                max_workers=conf["executor"]["num_cores"]
+            ),
             3600 * 1.5,
             lambda x: x,
-            self.event
+            self.event,
         )
         streamlinerEval.execute(self._callback, lambda _, err: logging.exception(err))
 

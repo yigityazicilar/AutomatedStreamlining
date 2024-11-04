@@ -1,7 +1,6 @@
-import logging
-import pathlib
+from pathlib import Path
 from typing import Dict, List, Optional
-import re, os
+import re
 from Toolchain.InstanceStats import InstanceStats
 from Toolchain.Solver import Solver
 
@@ -34,18 +33,20 @@ class Cadical(Solver):
     def __init__(self):
         Solver.__init__(self, "cadical", "sat", "-out-sat")
 
-    def get_savilerow_output_file(self, eprime_model: str, raw_instance: str, streamliner: Optional[str] = None) -> str:
-        raw_eprime_model = os.path.basename(eprime_model).split(".")[0]
+    def get_savilerow_output_file(
+        self, eprime_model: Path, raw_instance: str, streamliner: Optional[str] = None
+    ) -> Path:
+        raw_eprime_model = eprime_model.stem
         if streamliner:
-            return f"{raw_eprime_model}-{raw_instance}-{streamliner}.dimacs"
-        return f"{raw_eprime_model}-{raw_instance}.dimacs"
+            return Path(f"{raw_eprime_model}-{raw_instance}-{streamliner}.dimacs")
+        return Path(f"{raw_eprime_model}-{raw_instance}.dimacs")
 
     def execute(self, output_file: str) -> List[str]:
         random_seed = 42
         return ["cadical", "-v", f"--seed={random_seed}", output_file]
 
     def parse_std_out(
-        self,  output_file: str, out: bytes, instance_stats: InstanceStats
+        self, out: bytes, instance_stats: InstanceStats
     ) -> Dict[str, str | bool]:
         output = out.decode("ascii")
         stats: Dict[str, str | bool] = {}
@@ -68,10 +69,7 @@ class Cadical(Solver):
         instance_stats.add_solver_output(stats)
         instance_stats.set_solver_name(self.get_solver_name())
         instance_stats.set_satisfiable(bool(stats["satisfiable"]))
-        
-        logging.debug(f"Removing {output_file}")
-        pathlib.Path(os.path.join("/", output_file)).unlink(missing_ok=True)
-        
+
         return stats
 
     def parse_std_err(self, out: bytes, instance_stats: InstanceStats):

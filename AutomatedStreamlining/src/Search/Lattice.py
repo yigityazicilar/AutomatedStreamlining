@@ -41,12 +41,12 @@ class Lattice:
 
     def add_node(self, node_combination: str) -> None:
         logging.info(f"Adding node {node_combination}")
-        self.__graph.add_node(
-            node_combination, visited_count=0, score=0
-        )
+        self.__graph.add_node(node_combination, visited_count=0, score=0)
 
     def add_edge(self, current_combo_str: str, streamliner_combo: str) -> None:
-        logging.info(f"Adding edge between {0 if current_combo_str == '' else current_combo_str} and {streamliner_combo}")
+        logging.info(
+            f"Adding edge between {0 if current_combo_str == '' else current_combo_str} and {streamliner_combo}"
+        )
         self.__graph.add_edge(current_combo_str, streamliner_combo)
 
     def get_graph(self) -> DiGraph:

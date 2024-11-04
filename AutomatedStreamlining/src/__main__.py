@@ -21,6 +21,7 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 
+
 # Define the Mode enum
 class Mode(Enum):
     TEST = "test"
@@ -29,6 +30,7 @@ class Mode(Enum):
 
     def __str__(self):
         return self.value
+
 
 def main():
     parser = argparse.ArgumentParser(description="Streamlining an Essence Spec")
@@ -91,7 +93,8 @@ def main():
     args = parser.parse_args()
     working_directory: Path = args.working_dir
     instance_dir: Path = args.instance_dir
-    essence_spec = working_directory.joinpath("model.essence")
+    # Find the only essence file in the working directory
+    essence_spec = list(working_directory.glob("*.essence"))[0]
 
     with open(f"{working_directory}/conf.yaml", "r") as conf_file:
         conf = yaml.safe_load(conf_file)
@@ -104,106 +107,123 @@ def main():
 
     match args.mode:
         case Mode.TEST:
-            test(args.portfolio, working_directory, instance_dir, essence_spec, conf, solver)
+            test(
+                args.portfolio,
+                working_directory,
+                instance_dir,
+                essence_spec,
+                conf,
+                solver,
+            )
         case Mode.TRAIN:
-            train(args.fold_num, working_directory, instance_dir, essence_spec, conf, solver)
+            train(
+                args.fold_num,
+                working_directory,
+                instance_dir,
+                essence_spec,
+                conf,
+                solver,
+            )
         case Mode.EVAL:
             eval(working_directory, instance_dir, essence_spec, conf, solver)
 
-def train(fold_num: int, working_directory: Path, instance_dir: Path, essence_spec: Path, conf: Dict[str, Any], solver: Solver):
+
+def train(
+    fold_num: int,
+    working_directory: Path,
+    instance_dir: Path,
+    essence_spec: Path,
+    conf: Dict[str, Any],
+    solver: Solver,
+):
     _, _, instances = list(os.walk(instance_dir))[0]
     k_fold = KFold(n_splits=5, shuffle=True, random_state=42)
     train_test_iterator = k_fold.split(instances)
 
     train_set, test_set = list(train_test_iterator)[fold_num]
-    train_dir = Path(os.path.join(instance_dir, "Train"))
-    test_dir = Path(os.path.join(instance_dir, "Test"))
-    # validation_dir = Path(os.path.join(instance_dir, "Validation"))
+    train_dir = instance_dir / "Train"
+    test_dir = instance_dir / "Test"
     os.makedirs(train_dir, exist_ok=True)
-    # os.makedirs(validation_dir, exist_ok=True)
     os.makedirs(test_dir, exist_ok=True)
 
     random.seed(42)
-    # validation_set = set(random.sample(list(train_set), len(train_set) // 2))
-    # train_set = set(train_set) - validation_set
-    
 
     for j in train_set:
         shutil.copyfile(
-                    os.path.join(instance_dir, instances[j]),
-                    os.path.join(train_dir, instances[j]),
-                )
-        
-    # for j in validation_set:
-    #     shutil.copyfile(
-    #                 os.path.join(instance_dir, instances[j]),
-    #                 os.path.join(validation_dir, instances[j]),
-    #             )
+            instance_dir / instances[j],
+            train_dir / instances[j],
+        )
 
     for j in test_set:
         shutil.copyfile(
-                    os.path.join(instance_dir, instances[j]),
-                    os.path.join(test_dir, instances[j]),
-                )
+            instance_dir / instances[j],
+            test_dir / instances[j],
+        )
 
     conf["instance_directory"] = train_dir
 
     baseModelStats = BaseModelStats(
-                working_directory.joinpath("BaseModelResults.csv"),
-                working_directory,
-                train_dir,
-                solver,
-            )
-    baseModelStats.evaluate_training_instances(
-                essence_spec, conf
-            )
+        working_directory / "BaseModelResults.csv",
+        working_directory,
+        train_dir,
+        solver,
+    )
+    baseModelStats.evaluate_training_instances(essence_spec, conf)
 
     streamlinerModelStats = StreamlinerModelStats(
-                f"{working_directory}/StreamlinerModelStatsFold{fold_num}.csv",
-                solver,
-            )
+        working_directory / f"StreamlinerModelStatsFold{fold_num}.csv",
+        solver,
+    )
 
     portfolio_builder = HydraPortfolio(
-                essence_spec, baseModelStats, streamlinerModelStats, conf
-            )
+        essence_spec, baseModelStats, streamlinerModelStats, conf
+    )
 
-    os.makedirs(working_directory.joinpath("portfolios"), exist_ok=True)
-    portfolio_builder.build_portfolio(f"portfolios/PortfolioFold{fold_num}.json")
+    os.makedirs(working_directory / "portfolios", exist_ok=True)
+    portfolio_builder.build_portfolio(
+        working_directory / "portfolios" / f"PortfolioFold{fold_num}.json"
+    )
 
-def test(portfolio_loc: Path, working_directory: Path, instance_dir: Path, essence_spec: Path, conf: Dict[str, Any], solver: Solver):
+
+def test(
+    portfolio_loc: Path,
+    working_directory: Path,
+    instance_dir: Path,
+    essence_spec: Path,
+    conf: Dict[str, Any],
+    solver: Solver,
+):
     with open(portfolio_loc, "r") as portfolio_f:
         portfolio = json.load(portfolio_f)
         conf["portfolio"] = portfolio
 
     baseModelStats = BaseModelStats(
-                working_directory.joinpath("BaseModelResultsTest.csv"),
-                working_directory,
-                instance_dir,
-                solver,
-            )
+        working_directory / "BaseModelResultsTest.csv",
+        working_directory,
+        instance_dir,
+        solver,
+    )
 
-    baseModelStats.evaluate_training_instances(
-                essence_spec, conf
-            )
+    baseModelStats.evaluate_training_instances(essence_spec, conf)
 
     streamlinerModelStats = StreamlinerModelStats(
-                f"{working_directory}/StreamlinerModelStatsTestFold0.csv",
-                solver,
-            )
+        working_directory / "StreamlinerModelStatsTest.csv",
+        solver,
+    )
 
     evaluator = PortfolioEval(essence_spec, baseModelStats, streamlinerModelStats, conf)
     evaluator.evaluate()
 
+
 def eval(working_directory, instance_dir, essence_spec, conf, solver):
     baseModelStats = BaseModelStats(
-                working_directory.joinpath("BaseModelResults.csv"),
-                working_directory,
-                instance_dir,
-                solver,
-            )
-    baseModelStats.evaluate_training_instances(
-                essence_spec, conf
-            )
+        working_directory / "BaseModelResults.csv",
+        working_directory,
+        instance_dir,
+        solver,
+    )
+    baseModelStats.evaluate_training_instances(essence_spec, conf)
+
 
 if __name__ == "__main__":
     main()

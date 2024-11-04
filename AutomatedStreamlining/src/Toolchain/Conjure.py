@@ -8,7 +8,9 @@ portfolio_size = 1
 
 
 class Conjure:
-    def generate_streamliners(self, essence_spec: Path) -> Optional[tuple[bytes, bytes]]:
+    def generate_streamliners(
+        self, essence_spec: Path
+    ) -> Optional[tuple[bytes, bytes]]:
         # return ['conjure', 'streamlining', essence_spec, f'--portfolio-size={self.portfolio_size}', f'-o {output_dir}']
         logging.debug(f"Generating candidate streamliners")
         command = ["conjure", "streamlining", essence_spec]
@@ -23,7 +25,7 @@ class Conjure:
         self,
         essence_spec: Path,
         streamliner_combination: Optional[str],
-        output_dir: str,
+        output_dir: Path,
     ) -> list[Path]:
         # If this is a streamliner combination (- in the combo), translate to ','
         if not streamliner_combination:
@@ -41,25 +43,24 @@ class Conjure:
             output_dir,
         ]
         logging.debug(
-            f"Building streamlined models for {streamliner_combination}: {command}"
+            f"Building streamlined models for {streamliner_combination}: {" ".join(command)}"
         )
         if maybe_res := Executor.callable(command):
             _, _, _ = maybe_res
-            
+
         return [Path(eprime) for eprime in glob.glob(f"{output_dir}/*.eprime")]
 
     def translate_essence_param(
         self,
-        instance_dir: str,
-        eprime_model: str,
-        essence_param: str,
-        output_eprime_param: str,
+        eprime_model: Path,
+        essence_param: Path,
+        output_eprime_param: Path,
     ):
         return [
             "conjure",
             "translate-parameter",
             f"--eprime={eprime_model}",
-            f"--essence-param={instance_dir}/{essence_param}",
+            f"--essence-param={essence_param}",
             f"--eprime-param={output_eprime_param}",
         ]
 

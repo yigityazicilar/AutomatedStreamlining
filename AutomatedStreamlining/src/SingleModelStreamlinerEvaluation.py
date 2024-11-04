@@ -10,19 +10,20 @@ import concurrent.futures
 from threading import Event
 from typing import Callable, Dict, Optional, Set
 
+
 def _default_callback(instance: str, data: str):
     logging.info(instance, data)
 
+
 def _default_err_callback(instance: str, err: str):
     logging.exception(err)
+
 
 class SingleModelStreamlinerEvaluation:
     def __init__(
         self,
         model: Path,
-        working_directory: Path,
-        instance_dir: Path,
-        training_instances: Set[str],
+        training_instances: Set[Path],
         training_stats: pd.DataFrame,
         solver: Solver,
         executor: concurrent.futures.ThreadPoolExecutor,
@@ -32,8 +33,6 @@ class SingleModelStreamlinerEvaluation:
         streamliner_combination: Optional[str] = None,
     ) -> None:
         self.model = model
-        self.working_directory = working_directory
-        self.instance_dir = instance_dir
         self.training_instances = training_instances
         self.training_stats = training_stats
         self.solver = solver
@@ -43,7 +42,7 @@ class SingleModelStreamlinerEvaluation:
         self.event = event
         self.streamliner_combination = streamliner_combination
 
-    def generate_pipeline(self, training_instance: str):
+    def generate_pipeline(self, training_instance: Path) -> Pipeline:
         logging.debug(
             f"Generating pipeline for {training_instance} and model {self.model}"
         )
@@ -52,7 +51,7 @@ class SingleModelStreamlinerEvaluation:
             total_time = self.time_func(
                 list(
                     self.training_stats[
-                        self.training_stats["Instance"] == training_instance
+                        self.training_stats["Instance"] == training_instance.stem
                     ]["TotalTime"]
                 )[0]
             )
@@ -61,8 +60,6 @@ class SingleModelStreamlinerEvaluation:
 
         return Pipeline(
             self.model,
-            self.working_directory,
-            self.instance_dir,
             training_instance,
             self.solver,
             self.event,
@@ -80,19 +77,20 @@ class SingleModelStreamlinerEvaluation:
 
         mappings: Dict[str, Pipeline] = {}
         for instance in self.training_instances:
-            mappings[instance] = self.generate_pipeline(instance)
+            mappings[instance.stem] = self.generate_pipeline(instance)
 
         results: Dict[str, InstanceStats] = {}
-        
-        futures = {
-            self.executor.submit(mappings[instance].execute): instance
-            for instance in mappings.keys()
+
+        futures: Dict[concurrent.futures.Future[InstanceStats], str] = {
+            self.executor.submit(pipeline.execute): instance
+            for instance, pipeline in mappings.items()
         }
+
         for future in concurrent.futures.as_completed(futures):
             if self.event.is_set():
                 break
-            
-            instance: str = futures[future]
+
+            instance = futures[future]
             try:
                 data: InstanceStats = future.result()
                 results[instance] = data

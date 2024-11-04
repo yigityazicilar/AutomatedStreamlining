@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from pathlib import Path
 from typing import Dict, List, Optional
 
 from Toolchain.InstanceStats import InstanceStats
@@ -20,7 +21,9 @@ class Solver:
         return self.savilerow_output_flag
 
     @abstractmethod
-    def get_savilerow_output_file(self, eprime_model, raw_instance, streamliner: Optional[str] = None ) -> str:
+    def get_savilerow_output_file(
+        self, eprime_model: Path, raw_instance, streamliner: Optional[str] = None
+    ) -> Path:
         pass
 
     @abstractmethod
@@ -28,11 +31,15 @@ class Solver:
         pass
 
     @abstractmethod
-    def parse_std_out(self, output_file: str, out: bytes, instance_stats: InstanceStats) -> Dict[str, str]:
+    def parse_std_out(
+        self, out: bytes, instance_stats: InstanceStats
+    ) -> Dict[str, str | bool]:
         pass
 
     @abstractmethod
-    def parse_std_err(self, out, instance_stats):
+    def parse_std_err(
+        self, out: bytes, instance_stats: InstanceStats
+    ) -> Dict[str, str | bool]:
         pass
 
     @abstractmethod

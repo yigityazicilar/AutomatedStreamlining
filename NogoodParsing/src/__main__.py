@@ -90,7 +90,7 @@ def main():
         logger.error(f"No instance directories found in '{instance_folder_path}'")
         sys.exit(1)
 
-    seeds: List[str] = next(os.walk(instance_folder_path.joinpath(instance_dirs[0])))[1]
+    seeds: List[str] = next(os.walk(instance_folder_path / instance_dirs[0]))[1]
 
     # Check if all seeds of an instance contain the {instance}.find_bins file
     # If so, do not add it to the list
@@ -98,8 +98,8 @@ def main():
     for instance in instance_dirs:
         all_seeds_have_find_bins = True
         for seed in seeds:
-            find_bins_path = instance_folder_path.joinpath(
-                instance, seed, f"{instance}.find_bins"
+            find_bins_path = (
+                instance_folder_path / instance / seed / f"{instance}.find_bins"
             )
             if not find_bins_path.exists():
                 all_seeds_have_find_bins = False
@@ -112,12 +112,12 @@ def main():
             )
 
     aux_paths: List[Path] = [
-        instance_folder_path.joinpath(instance, seeds[0], f"{instance}.aux.gz")
+        instance_folder_path / instance / seeds[0] / f"{instance}.aux.gz"
         for instance in instances_to_process
     ]
 
     find_json: List[Path] = [
-        instance_folder_path.joinpath(instance, seeds[0], f"{instance}.finds")
+        instance_folder_path / instance / seeds[0] / f"{instance}.finds"
         for instance in instances_to_process
     ]
 
@@ -150,8 +150,8 @@ def main():
 
     for instance in instance_dirs:
         for seed in seeds:
-            find_bins_path = instance_folder_path.joinpath(
-                instance, seed, f"{instance}.find_bins"
+            find_bins_path = (
+                instance_folder_path / instance / seed / f"{instance}.find_bins"
             )
             if not find_bins_path.exists():
                 logger.error(
@@ -164,8 +164,8 @@ def main():
         binning_futures: List[Future] = []
         for instance in instance_dirs:
             for seed in seeds:
-                find_bins_path = instance_folder_path.joinpath(
-                    instance, seed, f"{instance}.find_bins"
+                find_bins_path = (
+                    instance_folder_path / instance / seed / f"{instance}.find_bins"
                 )
                 future = executor.submit(
                     bin_instance, find_bins_path, shared_variables, number_of_bins
@@ -175,7 +175,7 @@ def main():
         for future in as_completed(binning_futures):
             try:
                 result = future.result()
-                
+
                 # Combine the results
                 for variable_name, binned_arr in result.items():
                     if variable_name in combined_bins:
@@ -184,8 +184,6 @@ def main():
                         combined_bins[variable_name] = binned_arr
             except Exception as exc:
                 logger.error(f"Generated an exception: {exc}")
-
-    
 
     top_indices_json: Dict[str, Union[int, List[Dict[str, Any]]]] = {
         "bin_size": number_of_bins
@@ -196,7 +194,7 @@ def main():
         top_indices_json[variable_name] = find_top_indices(arr, n=5)
 
     try:
-        output_path = instance_folder_path.joinpath("top_indices.json")
+        output_path = instance_folder_path / "top_indices.json"
         with output_path.open("w") as f_output:
             json.dump(
                 top_indices_json,
@@ -214,7 +212,8 @@ def main():
         plt.imshow(arr, cmap="hot", interpolation="nearest")
         plt.colorbar()
         plt.title(f"Heatmap for {variable_name}")
-        plt.savefig(instance_folder_path.joinpath(f"{variable_name}.png"))
+        plt.savefig(instance_folder_path / f"{variable_name}.png")
+
 
 if __name__ == "__main__":
     main()

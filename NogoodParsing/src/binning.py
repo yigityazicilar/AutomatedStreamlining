@@ -119,6 +119,7 @@ def increment_find_matrices(
 
     return find_bins
 
+
 def map_values_to_nd_bins(matrix: np.ndarray, number_of_bins: int) -> np.ndarray:
     """
     This function will map values of an n-dimensional matrix to bins across all dimensions.
@@ -329,9 +330,7 @@ def parse_instance(
     instance: str,
     seed: str,
 ) -> None:
-    find_bins_path = instance_folder_path.joinpath(
-        instance, seed, f"{instance}.find_bins"
-    )
+    find_bins_path = instance_folder_path / instance / seed / f"{instance}.find_bins"
 
     if find_bins_path.exists():
         logger.info(f"Find bins already exist at '{find_bins_path}'. Skipping.")
@@ -342,7 +341,7 @@ def parse_instance(
         logger.info(f"Parsing for instance '{instance}' completed")
         logger.info(f"Binning seed '{seed}' of instance '{instance}'.")
         with gzip.open(
-            instance_folder_path.joinpath(instance, seed, f"{instance}.learnt.gz"),
+            instance_folder_path / instance / seed / f"{instance}.learnt.gz",
             "rt",
         ) as f_learnt:
             matrices: Dict[str, np.ndarray] = increment_find_matrices(
@@ -357,7 +356,7 @@ def parse_instance(
 
 def bin_instance(
     find_bins_path: Path, shared_variables: List[Dict[str, Any]], number_of_bins: int
-) -> Dict[str, np.ndarray ]:
+) -> Dict[str, np.ndarray]:
     logger.info(f"Binning the following find_bins' {find_bins_path}'")
 
     with find_bins_path.open("rb") as f_find_bins:

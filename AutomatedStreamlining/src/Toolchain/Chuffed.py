@@ -5,17 +5,20 @@ from typing import Dict, List, Optional
 import os
 from Toolchain.InstanceStats import InstanceStats
 from Toolchain.Solver import Solver
+from pathlib import Path
 
 
 class Chuffed(Solver):
     def __init__(self):
         Solver.__init__(self, "chuffed", "chuffed", "-out-flatzinc")
 
-    def get_savilerow_output_file(self, eprime_model, raw_instance, streamliner: Optional[str] = None) -> str:
-        raw_eprime_model = os.path.basename(eprime_model).split(".")[0]
+    def get_savilerow_output_file(
+        self, eprime_model: Path, raw_instance: str, streamliner: Optional[str] = None
+    ) -> Path:
+        raw_eprime_model = eprime_model.stem
         if streamliner:
-            return f"{raw_eprime_model}-{raw_instance}-{streamliner}.fzn"
-        return f"{raw_eprime_model}-{raw_instance}.fzn"
+            return Path(f"{raw_eprime_model}-{raw_instance}-{streamliner}.fzn")
+        return Path(f"{raw_eprime_model}-{raw_instance}.fzn")
 
     def execute(self, output_file: str) -> List[str]:
         random_seed = "42"

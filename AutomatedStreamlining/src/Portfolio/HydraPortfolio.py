@@ -27,12 +27,18 @@ class HydraPortfolio:
         self.conf = conf
         self.num_rounds: int = unwrap(conf.get("hydra")).get("num_rounds")
 
-    def build_portfolio(self, portfolio_name=None) -> Dict[str, Dict[str, Dict[str, float | np.floating[Any] | list[np.floating[Any]]]]]:
+    def build_portfolio(
+        self, portfolio_name: Path
+    ) -> Dict[
+        str, Dict[str, Dict[str, float | np.floating[Any] | list[np.floating[Any]]]]
+    ]:
         cur_round: int = 0
         best_instance_results: Dict[str, InstanceStats] = {}
-        overall_portfolio: Dict[str, Dict[str, Dict[str, float | np.floating[Any] | list[np.floating[Any]]]]] = {}
+        overall_portfolio: Dict[
+            str, Dict[str, Dict[str, float | np.floating[Any] | list[np.floating[Any]]]]
+        ] = {}
         while True:
-            eval = HydraEval(overall_portfolio, best_instance_results, self.conf["working_directory"])
+            eval = HydraEval(overall_portfolio, best_instance_results)
             search = MOMCTS(
                 self._essence_spec,
                 self._training_results,
@@ -54,7 +60,10 @@ class HydraPortfolio:
 
     # Generate the best stats for the instances
     def generate_best_instance_stats(
-        self, overall_portfolio: Dict[str, Dict[str, Dict[str, float | np.floating[Any] | list[np.floating[Any]]]]]
+        self,
+        overall_portfolio: Dict[
+            str, Dict[str, Dict[str, float | np.floating[Any] | list[np.floating[Any]]]]
+        ],
     ) -> Dict[str, InstanceStats]:
         best_instance_stats: Dict[str, InstanceStats] = {}
         df: pd.DataFrame = self._streamliner_model_stats.results()

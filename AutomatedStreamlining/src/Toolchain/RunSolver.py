@@ -1,8 +1,7 @@
-import os
-import pathlib
 import re
 import logging
 from typing import Dict, List
+from pathlib import Path
 
 """
 # WCTIME: wall clock time in seconds
@@ -82,26 +81,23 @@ class RunSolverStats:
 
 class RunSolver:
     def __init__(self, thread_id: int, stage_name: str) -> None:
-        self.output_file: str = f"{stage_name}_{thread_id}.txt"
+        self.output_file: Path = Path(f"{stage_name}_{thread_id}.txt")
 
     def _output_file(self) -> str:
         with open(self.output_file, "r") as output:
-            # output = output.decode('ascii')
-            return output.read()
+            run_solver_stats = output.read()
+
+        self.output_file.unlink()
+        return run_solver_stats
 
     def grab_runsolver_stats(self) -> RunSolverStats:
-        # logging.info(f"Output file {output_file}")
         output = self._output_file()
-        # logging.info(f"Output {output}")
         matches = {}
         for line in output.splitlines():
-            # if 'Maximum wall clock time exceeded' in line:
-            #     matches['time_out'] = True
-
             for matcher in patterns:
                 if matcher[1].match(line):
                     match = matcher[1].match(line)
-                    matches[matcher[0]] = match.group(1) # type: ignore
+                    matches[matcher[0]] = match.group(1)  # type: ignore
                     break
         try:
             to_return = RunSolverStats(
@@ -112,10 +108,7 @@ class RunSolver:
                 float(matches["SystemTime"]),
                 float(matches["CPUUsage"]),
             )
-            
-            logging.debug(f"Removing {self.output_file}")
-            pathlib.Path(os.path.join("/", self.output_file)).unlink(missing_ok=True)
-            
+
             return to_return
         except Exception as e:
             logging.info(f"RunSolver Output: {output}")

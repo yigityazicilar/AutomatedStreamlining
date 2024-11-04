@@ -1,10 +1,7 @@
-from concurrent.futures import thread
 import copy
 import glob
 from itertools import combinations
-import os
 from pathlib import Path
-import signal
 import threading
 import time
 
@@ -58,38 +55,46 @@ class MOMCTS:
         self.conf = conf
         self.streamliner_model_stats = streamliner_model_stats
         self.selection_class = UCTSelection()
-        self.training_instances: set[str] = set(
+        self.training_instances: Set[Path] = set(
             [
-                instance.split("/")[-1]
-                for instance in glob.glob(f"{self.instance_dir}/*.param")
+                Path(instance)
+                for instance in glob.glob(str(self.instance_dir / "*.param"))
             ]
         )
-        self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=conf["executor"]["num_cores"])
+        self.executor = concurrent.futures.ThreadPoolExecutor(
+            max_workers=conf["executor"]["num_cores"]
+        )
         self.eval_executor = concurrent.futures.ThreadPoolExecutor()
         self.event = threading.Event()
 
         # if not self.streamliner_model_stats.results().empty:
         #     self._simulate_existing_streamliners()
 
-    #* This threading implementation is an improvement over the initial implementation.
-    #* It allows for the simulation of multiple streamliners at the same time without having to wait for all instances to finish.
-    #* Will need to be removed to compare against the initial implementation.
-    def search(self, portfolio_name: str | None = None) -> None:
+    # * This threading implementation is an improvement over the initial implementation.
+    # * It allows for the simulation of multiple streamliners at the same time without having to wait for all instances to finish.
+    # * Will need to be removed to compare against the initial implementation.
+    def search(self, portfolio_name: Path) -> None:
         iteration = 0
         maximum_iteration = unwrap(self.conf.get("mcts")).get("num_iterations")
-        streamliners_being_run: set[tuple[str, concurrent.futures.Future[tuple[Dict[str, InstanceStats], bool]]]] = set()
+        streamliners_being_run: set[
+            tuple[str, concurrent.futures.Future[tuple[Dict[str, InstanceStats], bool]]]
+        ] = set()
         thread_count = self.conf["executor"]["num_cores"]
         while not self.event.is_set():
             if len(streamliners_being_run) > 0:
                 to_remove = set()
                 # Check if one is finished and evaluate it. Increment iteration count.
                 for streamliner, future in streamliners_being_run:
-                    logging.info(f"Checking if streamliner {streamliner} finished running.")
+                    logging.info(
+                        f"Checking if streamliner {streamliner} finished running."
+                    )
                     if future.done():
                         try:
                             results, cached = future.result()
                         except Exception as _:
-                            self._streamliner_state.add_invalid_combination(current_combination)
+                            self._streamliner_state.add_invalid_combination(
+                                current_combination
+                            )
                             logging.error(traceback.format_exc())
                             logging.error("Simulation failed")
                             to_remove.add((streamliner, future))
@@ -101,13 +106,10 @@ class MOMCTS:
                             streamliner, results, self.training_results
                         )
 
-                        if portfolio_name is not None:
-                            portfolio_name = portfolio_name.split(".")[0]
-                            self.eval.save_portfolio_name(
-                                f"{portfolio_name}Iteration{iteration}.json"
-                            )
-                        else:
-                            self.eval.save_portfolio()
+                        self.eval.save_portfolio_name(
+                            portfolio_name.parent
+                            / f"{portfolio_name.stem}Iteration{iteration}.json"
+                        )
 
                         self.backprop(streamliner, back_prop_value)
 
@@ -118,24 +120,29 @@ class MOMCTS:
                             logging.info(
                                 f"Iteration {iteration} out of {maximum_iteration}"
                             )
-                            
+
                 for remove in to_remove:
                     streamliners_being_run.remove(remove)
-         
+
             logging.info(f"Current queue size {self.executor._work_queue.qsize()}")
-            if self.executor._work_queue.qsize() <= thread_count and iteration < maximum_iteration:
+            if (
+                self.executor._work_queue.qsize() <= thread_count
+                and iteration < maximum_iteration
+            ):
                 logging.info(f"Adding new streamliners to the queue")
                 current_combination, possible_adjacent_streamliners = self.selection()
                 new_combination_added: str = self.expansion(
                     current_combination, list(possible_adjacent_streamliners)
                 )
-                
+
                 if new_combination_added in streamliners_being_run:
                     continue
 
-                simulation_future = self.eval_executor.submit(self.simulation, new_combination_added)
+                simulation_future = self.eval_executor.submit(
+                    self.simulation, new_combination_added
+                )
                 streamliners_being_run.add((new_combination_added, simulation_future))
-                    
+
             if iteration >= maximum_iteration and len(streamliners_being_run) == 0:
                 return
 
@@ -207,8 +214,8 @@ class MOMCTS:
         # Add an edge between the selected node and the newly expanded node
         self._lattice.add_edge(direct_parent_combination_str, new_streamliner_combo_str)
 
-        #* INFO: This would be the lattice way of doing it however we are using a cache to remember the results so we can do it as a tree.
-        #* Add an edge between the selected node and the newly expanded node and other possible parent nodes if they exists in the lattice
+        # * INFO: This would be the lattice way of doing it however we are using a cache to remember the results so we can do it as a tree.
+        # * Add an edge between the selected node and the newly expanded node and other possible parent nodes if they exists in the lattice
         # for comb in combinations(new_node_combination, len(new_node_combination) - 1):
         #     parent_node_combination_str = (
         #         self._streamliner_state.get_streamliner_repr_from_set(set(comb))
@@ -249,10 +256,12 @@ class MOMCTS:
         generated_models = self.conjure.generate_streamlined_models(
             self.essence_spec,
             new_combination,
-            output_dir=os.path.join(self.working_directory, "conjure-output", new_combination),
+            output_dir=self.working_directory / "conjure-output" / new_combination,
         )
         if len(generated_models) == 1:
-            instances_to_run: Set[str] = self._get_instances_to_run(new_combination, streamliner_results_df)
+            instances_to_run: Set[Path] = self._get_instances_to_run(
+                new_combination, streamliner_results_df
+            )
             # Instances that have not been run yet. Allows for midway restarts
             instances_to_run.intersection_update(instances_left_to_eval)
 
@@ -261,8 +270,6 @@ class MOMCTS:
 
             streamlinerEval = SingleModelStreamlinerEvaluation(
                 generated_models[0],
-                self.working_directory,
-                self.instance_dir,
                 instances_to_run,
                 self.training_results,
                 get_solver(unwrap(self.conf.get("solver"))),
@@ -299,34 +306,46 @@ class MOMCTS:
         for node in predecessor_nodes:
             self.backprop(node, back_prop_value)
 
-    #* INFO: This function is used to get the instances that need to be run for a given streamliner combination
-    #* It is an improvement over the initial implementation.
-    def _get_instances_to_run(self, streamliner_comb: str, streamliner_results_df: pd.DataFrame) -> Set[str]:
+    # * INFO: This function is used to get the instances that need to be run for a given streamliner combination
+    # * It is an improvement over the initial implementation.
+    def _get_instances_to_run(
+        self, streamliner_comb: str, streamliner_results_df: pd.DataFrame
+    ) -> Set[Path]:
         combination_set = set(streamliner_comb.split("-"))
         if len(combination_set) == 1:
             return set(self.training_instances)
-        
-        def get_valid_instances_for_streamliner(streamliner):
+
+        def get_valid_instances_for_streamliner(streamliner: str) -> Set[str]:
             """Helper function to get valid instances for a given streamliner."""
-            mask = (
-                (streamliner_results_df["Streamliner"] == streamliner) &
-                (streamliner_results_df["Satisfiable"] | streamliner_results_df["TimeOut"])
+            mask = (streamliner_results_df["Streamliner"] == streamliner) & (
+                streamliner_results_df["Satisfiable"]
+                | streamliner_results_df["TimeOut"]
             )
             return set(streamliner_results_df.loc[mask]["Instance"])
 
         first_streamliner = next(iter(combination_set))
-        instances_to_run = get_valid_instances_for_streamliner(first_streamliner)
-        
+        instances_to_run_str = get_valid_instances_for_streamliner(first_streamliner)
+
         # Intersect with remaining streamliners
         for streamliner in list(combination_set)[1:]:
-            instances_to_run.intersection_update(
+            instances_to_run_str.intersection_update(
                 get_valid_instances_for_streamliner(streamliner)
             )
-        
+
+        instances_to_run = set()
+        for instance in instances_to_run_str:
+            instances_to_run.add(
+                next(
+                    instance_path
+                    for instance_path in self.training_instances
+                    if instance in instance_path.stem
+                )
+            )
+
         return instances_to_run
 
-    #* If the run is stopped midway this will simulate the streamliners that have already been run.
-    #? However, this was not needed as we did not stop the run midway.
+    # * If the run is stopped midway this will simulate the streamliners that have already been run.
+    # ? However, this was not needed as we did not stop the run midway.
     def _simulate_existing_streamliners(self):
         tested_streamliners_df = self.streamliner_model_stats.results()
         tested_streamliners = self.streamliner_model_stats.results()[
@@ -354,6 +373,4 @@ class MOMCTS:
             back_prop_value = self.eval.eval_streamliner(
                 simulated_streamliner, base_results, self.training_results
             )
-            self.eval.save_portfolio()
-
             self.backprop(simulated_streamliner, back_prop_value)

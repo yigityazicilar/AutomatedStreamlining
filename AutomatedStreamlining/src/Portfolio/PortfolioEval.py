@@ -1,11 +1,10 @@
 import copy
 from functools import partial
+import glob
 import logging
 from pathlib import Path
 import threading
-from turtle import st
-from typing import Dict, Any
-import os
+from typing import Dict, Any, Set
 import numpy as np
 
 from Toolchain.SolverFactory import get_solver
@@ -15,6 +14,10 @@ from Search.StreamlinerModelStats import StreamlinerModelStats
 from Search.BaseModelStats import BaseModelStats
 from Util import unwrap
 
+
+#! Think about how we should calculate time taken for each instance.
+#! Are we running the streamliner and the base model in a portfolio setting?
+#! If so, the whichever is minimum should be doubled as both are run in parallel.
 class PortfolioEval:
     def __init__(
         self,
@@ -24,7 +27,7 @@ class PortfolioEval:
         conf: Dict[str, Any],
     ) -> None:
         self.essence_spec = essence_spec
-        self.base_model_stats = copy.deepcopy(base_model_stats.training_df)
+        self.base_model_stats = copy.deepcopy(base_model_stats.results())
         self.streamliner_stats = streamliner_stats
         self.portfolio: Dict[str, Any] = unwrap(conf.get("portfolio"))
         self.conf = conf
@@ -34,7 +37,12 @@ class PortfolioEval:
         self.event = threading.Event()
 
     def evaluate(self):
-        instances_to_eval: set[str] = set(self.base_model_stats["Instance"].unique())
+        instances_to_eval: Set[Path] = set(
+            [
+                Path(param)
+                for param in glob.glob(str(self.instance_directory / "*.param"))
+            ]
+        )
 
         for streamliner in self.portfolio.keys():
             if streamliner in set(
@@ -45,14 +53,12 @@ class PortfolioEval:
             generated_models = self.conjure.generate_streamlined_models(
                 self.essence_spec,
                 streamliner,
-                output_dir=os.path.join(self.working_directory, "conjure-output", streamliner),
+                output_dir=self.working_directory / "conjure-output" / streamliner,
             )
             if len(generated_models) == 1:
                 logging.info(generated_models)
                 streamlinerEval = SingleModelStreamlinerEvaluation(
                     generated_models[0],
-                    self.working_directory,
-                    self.instance_directory,
                     instances_to_eval,
                     self.base_model_stats,
                     get_solver(unwrap(self.conf.get("solver"))),
@@ -60,7 +66,7 @@ class PortfolioEval:
                     None,
                     lambda x: x,
                     self.event,
-                    streamliner
+                    streamliner,
                 )
 
                 callback = partial(self.streamliner_stats.callback, streamliner)
@@ -102,7 +108,7 @@ class PortfolioEval:
                     total_time += list(streamlined_run["TotalTime"])[0]
                     satisfiable = True
                     break
-                
+
                 total_time += list(streamlined_run["TotalTime"])[0]
 
             if satisfiable:
@@ -111,10 +117,8 @@ class PortfolioEval:
             #     total_time = (total_time * 2) + (instance_base_time - total_time)
             else:
                 total_time = instance_base_time
-                
-            stats["RedFirst"].append(
-                (instance, instance_base_time / total_time)
-            )
+
+            stats["RedFirst"].append((instance, instance_base_time / total_time))
 
             # Applicability First
             total_time = 0
@@ -129,7 +133,7 @@ class PortfolioEval:
                     total_time += list(streamlined_run["TotalTime"])[0]
                     satisfiable = True
                     break
-                
+
                 total_time += list(streamlined_run["TotalTime"])[0]
 
             if satisfiable:
@@ -138,10 +142,8 @@ class PortfolioEval:
             #     total_time = (total_time * 2) + (instance_base_time - total_time)
             else:
                 total_time = instance_base_time
-                
-            stats["AppFirst"].append(
-                (instance, instance_base_time / total_time)
-            )
+
+            stats["AppFirst"].append((instance, instance_base_time / total_time))
 
             # Oracle
             try:
@@ -152,7 +154,11 @@ class PortfolioEval:
                 )
 
                 stats["Oracle"].append(
-                   (instance, instance_base_time / (min(min_streamlined_time, instance_base_time)))
+                    (
+                        instance,
+                        instance_base_time
+                        / (min(min_streamlined_time, instance_base_time)),
+                    )
                 )
             except:
                 # total_time = sum(instance_runs_streamlined["TotalTime"])
@@ -160,10 +166,8 @@ class PortfolioEval:
                 #     total_time = (total_time * 2) + (instance_base_time - total_time)
                 # else:
                 total_time = instance_base_time
-                
-                stats["Oracle"].append(
-                    (instance, instance_base_time / total_time)
-                )
+
+                stats["Oracle"].append((instance, instance_base_time / total_time))
 
         for portfolio_method in stats.keys():
             print(stats[portfolio_method])

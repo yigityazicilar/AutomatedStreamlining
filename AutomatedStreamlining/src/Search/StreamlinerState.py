@@ -7,11 +7,14 @@ from StreamlinerSelection import StreamlinerSelection
 selected_streamliner_groups = ["MatrixByRowBucket-0", "MatrixByRowBucket-9"]
 removed_streamliner_groups = ["MatrixBy"]
 
+
 class StreamlinerState:
-    def __init__(self, streamliner_output: AnyStr, streamliners_to_use: StreamlinerSelection):
+    def __init__(
+        self, streamliner_output: AnyStr, streamliners_to_use: StreamlinerSelection
+    ):
         self.streamliner_json: Dict[str, Any] = json.loads(streamliner_output)
         temp_streamliner_dict: Dict[str, Any] = {}
-        
+
         if streamliners_to_use == StreamlinerSelection.FINE_FILTERED:
             for k, v in self.streamliner_json.items():
                 for s in selected_streamliner_groups:
@@ -29,7 +32,7 @@ class StreamlinerState:
                     if not filtered:
                         temp_streamliner_dict[k] = v
         else:
-           for k, v in self.streamliner_json.items():
+            for k, v in self.streamliner_json.items():
                 for r in removed_streamliner_groups:
                     filtered = False
                     for g in v["groups"]:
@@ -37,8 +40,8 @@ class StreamlinerState:
                             filtered = True
                             break
                     if filtered:
-                        temp_streamliner_dict[k] = v 
-                        
+                        temp_streamliner_dict[k] = v
+
         self.streamliner_json = temp_streamliner_dict
         logging.info(f"Number of candidate streamliners: {len(self.streamliner_json)}")
         self.init_groups(self.streamliner_json)

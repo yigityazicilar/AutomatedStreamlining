@@ -1,3 +1,4 @@
+from pathlib import Path
 import threading
 import pandas as pd
 import os
@@ -6,7 +7,7 @@ from Toolchain.Solver import Solver
 
 
 class StreamlinerModelStats:
-    def __init__(self, streamliner_model_stats_file: str, solver: Solver):
+    def __init__(self, streamliner_model_stats_file: Path, solver: Solver):
         self.streamliner_model_stats_file = streamliner_model_stats_file
         self.streamliner_model_stats: pd.DataFrame = self._load_base_streamliner_stats(
             streamliner_model_stats_file, solver
@@ -27,6 +28,7 @@ class StreamlinerModelStats:
                 "Solver": self.solver.get_solver_name(),
             }
             for stage_name, stage in instance_stages.items():
+                
                 for key, value in stage.keys().items():
                     combined_keys[f"{stage_name}_{key}"] = value
 
@@ -48,7 +50,7 @@ class StreamlinerModelStats:
             )
 
     def _load_base_streamliner_stats(
-        self, output_file: str, solver: Solver
+        self, output_file: Path, solver: Solver
     ) -> pd.DataFrame:
         if os.path.exists(output_file):
             self.training_df = pd.read_csv(output_file)

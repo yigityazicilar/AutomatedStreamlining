@@ -3,11 +3,14 @@ import subprocess
 import time
 from typing import List, Optional
 
+
 def callable(command: List[str]) -> Optional[tuple[bytes, bytes, float]]:
     try:
         logging.info(f"Command {command}")
         time_before = time.time()
-        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        process = subprocess.Popen(
+            command, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
         out, err = process.communicate()
         time_taken = time.time() - time_before
 

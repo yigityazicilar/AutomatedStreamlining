@@ -1,5 +1,6 @@
 import json
 import logging
+from pathlib import Path
 from typing import Any, List, Dict, Set
 import os, json
 
@@ -15,6 +16,7 @@ MEDIAN_REDUCTION_KEY = "MedianReduction"
 STD_DEV_KEY = "StandardDeviation"
 QUANTILES_KEY = "Quantiles"
 
+
 class HydraEval:
     """
     With the inputted portfolio we need to know how well each streamliner did on each instance as with Hydra
@@ -23,14 +25,16 @@ class HydraEval:
 
     def __init__(
         self,
-        overall_portfolio: Dict[str, Dict[str, Dict[str, float | np.floating[Any] | list[np.floating[Any]]]]],
+        overall_portfolio: Dict[
+            str, Dict[str, Dict[str, float | np.floating[Any] | list[np.floating[Any]]]]
+        ],
         best_instance_results: Dict[str, InstanceStats],
-        working_directory: str
     ):
         self.__overall_portfolio = overall_portfolio
         self.__best_instance_results = best_instance_results
-        self.__cur_portfolio: Dict[str, Dict[str, float | np.floating[Any] | list[np.floating[Any]]]] = {}
-        self.__working_directory = working_directory
+        self.__cur_portfolio: Dict[
+            str, Dict[str, float | np.floating[Any] | list[np.floating[Any]]]
+        ] = {}
 
     def _test(
         self,
@@ -125,7 +129,7 @@ class HydraEval:
         logging.info("Hydra: Evaluating Streamliner")
         if len(results) == 0:
             return 0
-        
+
         # Combine the results of the current portfolio with the new streamliner
         combined_results = self.combine_results(results)
         objective_values = self._objective_values(combined_results, training_results)
@@ -154,17 +158,13 @@ class HydraEval:
                 return True
         return False
 
-    def save_portfolio(self) -> None:
-        logging.info(json.dumps(self.__cur_portfolio))
-        with open(os.path.join(self.__working_directory, "Portfolio.json"), "w") as portfolio:
+    def save_portfolio_name(self, filename: Path) -> None:
+        with open(filename, "w") as portfolio:
             portfolio.write(json.dumps(self.__cur_portfolio))
-        
-    def save_portfolio_name(self, filename) -> None:
-        logging.info(json.dumps(self.__cur_portfolio))
-        with open(os.path.join(self.__working_directory, filename), "w") as portfolio:
-            portfolio.write(json.dumps(self.__cur_portfolio)) 
 
-    def portfolio(self) -> Dict[str, Dict[str, float | np.floating[Any] | list[np.floating[Any]]]]:
+    def portfolio(
+        self,
+    ) -> Dict[str, Dict[str, float | np.floating[Any] | list[np.floating[Any]]]]:
         return self.__cur_portfolio
 
     def _objective_values(
@@ -173,10 +173,11 @@ class HydraEval:
         training_results: pd.DataFrame,
     ) -> Dict[str, float | np.floating[Any] | list[np.floating[Any]]]:
         total_number_of_instances: int = len(training_results["Instance"].unique())
-        
-        applicability: float = sum(
-            [int(results[x].satisfiable()) for x in results]
-        ) / total_number_of_instances
+
+        applicability: float = (
+            sum([int(results[x].satisfiable()) for x in results])
+            / total_number_of_instances
+        )
 
         total_solving_time: float = sum(
             [results[x].solver_time() for x in results if results[x].satisfiable()]
@@ -199,7 +200,7 @@ class HydraEval:
             for x in results
             if results[x].satisfiable()
         ]
-        
+
         satisfiable_instances: Set[str] = set(
             [x for x in results if results[x].satisfiable()]
         )

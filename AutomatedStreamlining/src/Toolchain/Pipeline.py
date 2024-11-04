@@ -39,34 +39,32 @@ class Pipeline:
     def __init__(
         self,
         eprime_model: Path,
-        working_directory: Path,
-        instance_dir: Path,
-        essence_param_file: str,
+        essence_param_file: Path,
         solver: Solver,
         event: threading.Event,
         total_time: float,
         streamliners: Optional[str] = None,
     ) -> None:
         self.eprime_model = eprime_model
-        self.working_directory = working_directory
-        self.instance_dir = instance_dir
-        raw_eprime_model = os.path.basename(eprime_model).split(".")[0]
+        raw_eprime_model = eprime_model.stem
         self.total_time = total_time
         self.essence_param_file = essence_param_file
-        self.raw_instance = os.path.basename(essence_param_file).split(".")[0]
+        self.raw_instance = essence_param_file.stem
+        # ? Output file names
         if streamliners:
-            self.output_eprime_param = (
+            self.output_eprime_param = Path(
                 f"{raw_eprime_model}-{self.raw_instance}-{streamliners}.eprime-param"
             )
         else:
-            self.output_eprime_param = (
+            self.output_eprime_param = Path(
                 f"{raw_eprime_model}-{self.raw_instance}.eprime-param"
             )
+        self.output_eprime_param_minion = Path(
+            str(self.output_eprime_param) + ".minion"
+        )
         self.savilerow_output = solver.get_savilerow_output_file(
             self.eprime_model, self.raw_instance, streamliners
         )
-
-        # logging.info(self.savilerow_output)
 
         self.solver = solver
         self.event = event
@@ -78,7 +76,6 @@ class Pipeline:
             conjure.parse_std_out,
             conjure.parse_std_err,
             (
-                self.instance_dir,
                 eprime_model,
                 essence_param_file,
                 self.output_eprime_param,
@@ -99,7 +96,7 @@ class Pipeline:
         self.solver_stage = Stage(
             solver.get_solver_name(),
             solver.execute,
-            partial(solver.parse_std_out, self.savilerow_output),
+            solver.parse_std_out,
             solver.parse_std_err,
             (self.savilerow_output,),
         )
@@ -183,4 +180,10 @@ class Pipeline:
 
         except StageTimeout as e:
             instance_stats.set_satisfiable(False)
+
+        #! Remove all of the output files.
+        self.output_eprime_param.unlink(missing_ok=True)
+        self.output_eprime_param_minion.unlink(missing_ok=True)
+        self.savilerow_output.unlink(missing_ok=True)
+
         return instance_stats

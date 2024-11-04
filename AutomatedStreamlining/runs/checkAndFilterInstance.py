@@ -41,12 +41,11 @@ def main():
     params_folder: Path = args.params
     output_folder: Path = args.output
     instance_names: List[Path] = [
-        params_folder.joinpath(instance)
-        for instance in base_model_results["Instance"].unique()
+        params_folder / instance for instance in base_model_results["Instance"].unique()
     ]
     os.makedirs(output_folder, exist_ok=True)
     for instance in instance_names:
-        shutil.copy(instance, output_folder.joinpath(instance.name))
+        shutil.copy(instance, output_folder / instance.name)
 
 
 if __name__ == "__main__":
