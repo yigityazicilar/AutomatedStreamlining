@@ -51,7 +51,7 @@ class SingleModelStreamlinerEvaluation:
             total_time = self.time_func(
                 list(
                     self.training_stats[
-                        self.training_stats["Instance"] == training_instance.stem
+                        self.training_stats["Instance"] == training_instance.name
                     ]["TotalTime"]
                 )[0]
             )
@@ -77,7 +77,7 @@ class SingleModelStreamlinerEvaluation:
 
         mappings: Dict[str, Pipeline] = {}
         for instance in self.training_instances:
-            mappings[instance.stem] = self.generate_pipeline(instance)
+            mappings[instance.name] = self.generate_pipeline(instance)
 
         results: Dict[str, InstanceStats] = {}
 

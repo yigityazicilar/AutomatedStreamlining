@@ -26,7 +26,7 @@ class BaseModelStats:
             for instance in glob.glob(str(training_instance_dir / "*.param"))
         ]
         self.training_instances: List[str] = [
-            instance.stem for instance in self.training_instance_paths
+            instance.name for instance in self.training_instance_paths
         ]
 
         self.training_df: pd.DataFrame = self._load_base_stats(base_stats_file, solver)
@@ -40,7 +40,7 @@ class BaseModelStats:
         logging.debug(f"Callback for {instance} run. Stage {result.get_stages()}.")
         instance_stages = result.get_stages()
         combined_keys: Dict[str, str | bool | int | float] = {
-            "Instance": instance.stem,
+            "Instance": instance.name,
             "TotalTime": result.total_time(),
             "Satisfiable": result.satisfiable(),
             "Killed": result.killed(),
@@ -118,7 +118,7 @@ class BaseModelStats:
                 next(
                     instance_path
                     for instance_path in self.training_instance_paths
-                    if instance in instance_path.stem
+                    if instance == instance_path.name
                 )
             )
 

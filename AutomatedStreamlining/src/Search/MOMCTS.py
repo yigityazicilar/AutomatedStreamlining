@@ -338,7 +338,7 @@ class MOMCTS:
                 next(
                     instance_path
                     for instance_path in self.training_instances
-                    if instance in instance_path.stem
+                    if instance == instance_path.name
                 )
             )
 
