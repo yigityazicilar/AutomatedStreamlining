@@ -5,6 +5,7 @@ import logging
 from pathlib import Path
 import threading
 from typing import Dict, Any, Set
+from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 
 from Toolchain.SolverFactory import get_solver
@@ -34,6 +35,7 @@ class PortfolioEval:
         self.conjure: Conjure = Conjure()
         self.working_directory = unwrap(conf.get("working_directory"))
         self.instance_directory = unwrap(conf.get("instance_directory"))
+        self.executor = ThreadPoolExecutor(max_workers=conf["executor"]["num_cores"])
         self.event = threading.Event()
 
     def evaluate(self):
@@ -58,15 +60,14 @@ class PortfolioEval:
             if len(generated_models) == 1:
                 logging.info(generated_models)
                 streamlinerEval = SingleModelStreamlinerEvaluation(
-                    generated_models[0],
-                    instances_to_eval,
-                    self.base_model_stats,
-                    get_solver(unwrap(self.conf.get("solver"))),
-                    unwrap(self.conf.get("executor")).get("num_cores"),
-                    None,
-                    lambda x: x,
-                    self.event,
-                    streamliner,
+                    model=generated_models[0],
+                    instances=instances_to_eval,
+                    stats=self.base_model_stats,
+                    solver=get_solver(unwrap(self.conf.get("solver"))),
+                    executor=self.executor,
+                    event=self.event,
+                    time=lambda x: x * 1.05,
+                    streamliner=streamliner,
                 )
 
                 callback = partial(self.streamliner_stats.callback, streamliner)

@@ -23,40 +23,38 @@ class SingleModelStreamlinerEvaluation:
     def __init__(
         self,
         model: Path,
-        training_instances: Set[Path],
-        training_stats: pd.DataFrame,
+        instances: Set[Path],
+        stats: pd.DataFrame,
         solver: Solver,
         executor: concurrent.futures.ThreadPoolExecutor,
-        total_time: Optional[float],
-        time_func: Callable[[float], float],
         event: threading.Event,
-        streamliner_combination: Optional[str] = None,
+        time: float | Callable[[float], float],
+        streamliner: Optional[str] = None,
     ) -> None:
         self.model = model
-        self.training_instances = training_instances
-        self.training_stats = training_stats
+        self.instances = instances
+        self.stats = stats
         self.solver = solver
         self.executor = executor
-        self.total_time: Optional[float] = total_time
-        self.time_func = time_func
+        self.time = time
         self.event = event
-        self.streamliner_combination = streamliner_combination
+        self.streamliner = streamliner
 
     def generate_pipeline(self, training_instance: Path) -> Pipeline:
         logging.debug(
             f"Generating pipeline for {training_instance} and model {self.model}"
         )
 
-        if self.total_time is None:
-            total_time = self.time_func(
+        if callable(self.time):
+            total_time: float = self.time(
                 list(
-                    self.training_stats[
-                        self.training_stats["Instance"] == training_instance.name
-                    ]["TotalTime"]
+                    self.stats[self.stats["Instance"] == training_instance.name][
+                        "TotalTime"
+                    ]
                 )[0]
             )
         else:
-            total_time = self.total_time
+            total_time: float = self.time
 
         return Pipeline(
             self.model,
@@ -64,7 +62,7 @@ class SingleModelStreamlinerEvaluation:
             self.solver,
             self.event,
             total_time,
-            self.streamliner_combination,
+            self.streamliner,
         )
 
     def execute(
@@ -72,11 +70,11 @@ class SingleModelStreamlinerEvaluation:
         callback: Callable = _default_callback,
         error_callback: Callable = _default_err_callback,
     ) -> Dict[str, InstanceStats]:
-        if len(self.training_instances) == 0:
+        if len(self.instances) == 0:
             return {}
 
         mappings: Dict[str, Pipeline] = {}
-        for instance in self.training_instances:
+        for instance in self.instances:
             mappings[instance.name] = self.generate_pipeline(instance)
 
         results: Dict[str, InstanceStats] = {}

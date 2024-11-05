@@ -9,7 +9,7 @@ from SingleModelStreamlinerEvaluation import SingleModelStreamlinerEvaluation
 from Toolchain.Conjure import Conjure
 from Toolchain.Solver import Solver
 from typing import Any, Dict, List
-import concurrent.futures
+from concurrent.futures import ThreadPoolExecutor
 
 
 class BaseModelStats:
@@ -132,16 +132,13 @@ class BaseModelStats:
         )
 
         streamlinerEval = SingleModelStreamlinerEvaluation(
-            generated_models[0],
-            instances_to_eval,
-            pd.DataFrame(),
-            self.solver,
-            concurrent.futures.ThreadPoolExecutor(
-                max_workers=conf["executor"]["num_cores"]
-            ),
-            3600 * 1.5,
-            lambda x: x,
-            self.event,
+            model=generated_models[0],
+            instances=instances_to_eval,
+            stats=pd.DataFrame(),
+            solver=self.solver,
+            executor=ThreadPoolExecutor(max_workers=conf["executor"]["num_cores"]),
+            event=self.event,
+            time=3600 * 1.5,
         )
         streamlinerEval.execute(self._callback, lambda _, err: logging.exception(err))
 

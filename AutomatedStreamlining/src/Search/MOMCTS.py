@@ -274,15 +274,14 @@ class MOMCTS:
                 return {}, False
 
             streamlinerEval = SingleModelStreamlinerEvaluation(
-                generated_models[0],
-                instances_to_run,
-                self.training_results,
-                get_solver(unwrap(self.conf.get("solver"))),
-                self.executor,
-                None,
-                lambda x: x * 1.05,
-                self.event,
-                new_combination,
+                model=generated_models[0],
+                instances=instances_to_run,
+                stats=self.training_results,
+                solver=get_solver(unwrap(self.conf.get("solver"))),
+                executor=self.executor,
+                time=lambda x: x * 1.05,
+                event=self.event,
+                streamliner=new_combination,
             )
             callback = partial(self.streamliner_model_stats.callback, new_combination)
             # We now need to parse these results into some format that we can use as a reference point

@@ -1,7 +1,7 @@
 import json
 import logging
 from pathlib import Path
-from typing import Any, List, Dict, Set
+from typing import Any, List, Dict, Optional, Set
 import os, json
 
 import numpy as np
@@ -39,7 +39,7 @@ class HydraEval:
     def _test(
         self,
         current_result: InstanceStats,
-        best_result: InstanceStats | None,
+        best_result: Optional[InstanceStats],
     ) -> bool:
         """
         Test whether our current result is superior to any of the streamliners in our portfolio on this given instance
