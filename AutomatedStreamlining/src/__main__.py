@@ -143,21 +143,29 @@ def train(
     train_set, test_set = list(train_test_iterator)[fold_num]
     train_dir = instance_dir / "Train"
     test_dir = instance_dir / "Test"
+    validation_dir = instance_dir / "Validation"
     os.makedirs(train_dir, exist_ok=True)
     os.makedirs(test_dir, exist_ok=True)
+    os.makedirs(validation_dir, exist_ok=True)
 
-    random.seed(42)
+    random.seed(42 + fold_num)
 
-    for j in train_set:
+    for i in train_set:
+        if random.random() < 0.5:
+            shutil.copyfile(
+                instance_dir / instances[i],
+                validation_dir / instances[i],
+            )
+        else:
+            shutil.copyfile(
+                instance_dir / instances[i],
+                train_dir / instances[i],
+            )
+
+    for i in test_set:
         shutil.copyfile(
-            instance_dir / instances[j],
-            train_dir / instances[j],
-        )
-
-    for j in test_set:
-        shutil.copyfile(
-            instance_dir / instances[j],
-            test_dir / instances[j],
+            instance_dir / instances[i],
+            test_dir / instances[i],
         )
 
     conf["instance_directory"] = train_dir
