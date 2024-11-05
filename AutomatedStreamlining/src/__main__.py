@@ -41,7 +41,7 @@ def main():
         type=Mode,
         choices=list(Mode),
         required=True,
-        help="Mode of operation: train, test, fold",
+        help="Mode of operation: train, test, eval",
     )
 
     initial_args = parser.parse_known_args()[0]
@@ -136,7 +136,7 @@ def train(
     conf: Dict[str, Any],
     solver: Solver,
 ):
-    _, _, instances = list(os.walk(instance_dir))[0]
+    _, _, instances = next(os.walk(instance_dir))
     k_fold = KFold(n_splits=5, shuffle=True, random_state=42)
     train_test_iterator = k_fold.split(instances)
 
