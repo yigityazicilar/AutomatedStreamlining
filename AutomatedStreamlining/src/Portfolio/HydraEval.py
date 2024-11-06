@@ -16,6 +16,8 @@ MEDIAN_REDUCTION_KEY = "MedianReduction"
 STD_DEV_KEY = "StandardDeviation"
 QUANTILES_KEY = "Quantiles"
 
+from Types import Round, Portfolio, StreamlinerPerformanceMetrics
+
 
 class HydraEval:
     """
@@ -25,16 +27,12 @@ class HydraEval:
 
     def __init__(
         self,
-        overall_portfolio: Dict[
-            str, Dict[str, Dict[str, float | np.floating[Any] | list[np.floating[Any]]]]
-        ],
+        overall_portfolio: Dict[Round, Portfolio],
         best_instance_results: Dict[str, InstanceStats],
     ):
         self.__overall_portfolio = overall_portfolio
         self.__best_instance_results = best_instance_results
-        self.__cur_portfolio: Dict[
-            str, Dict[str, float | np.floating[Any] | list[np.floating[Any]]]
-        ] = {}
+        self.__cur_portfolio: Portfolio = {}
 
     def _test(
         self,
@@ -62,25 +60,30 @@ class HydraEval:
         else:
             return False
 
-    def _dominated(self, x: Dict, y: Dict) -> int:
+    def _dominated(
+        self, x: StreamlinerPerformanceMetrics, y: StreamlinerPerformanceMetrics
+    ) -> int:
         """
         Test whether x dominates y on Average Applicability and Mean Reduction
         :param x: Dict of objective values
         :param y: Dict of objective values
         :return: 1 if x dominates, 0 otherwise
         """
+
         return int(
             (
-                x[AVG_APPLIC_KEY] > y[AVG_APPLIC_KEY]
-                and x[MEAN_REDUCTION_KEY] >= y[MEAN_REDUCTION_KEY]
+                x[AVG_APPLIC_KEY] > y[AVG_APPLIC_KEY]  # type: ignore
+                and x[MEAN_REDUCTION_KEY] >= y[MEAN_REDUCTION_KEY]  # type: ignore
             )
             or (
-                x[AVG_APPLIC_KEY] >= y[AVG_APPLIC_KEY]
-                and x[MEAN_REDUCTION_KEY] > y[MEAN_REDUCTION_KEY]
+                x[AVG_APPLIC_KEY] >= y[AVG_APPLIC_KEY]  # type: ignore
+                and x[MEAN_REDUCTION_KEY] > y[MEAN_REDUCTION_KEY]  # type: ignore
             )
         )
 
-    def _non_dominated(self, objective_values: Dict, cur_portfolio: Dict) -> bool:
+    def _non_dominated(
+        self, objective_values: StreamlinerPerformanceMetrics, cur_portfolio: Portfolio
+    ) -> bool:
         """
         Test whether the objective values of the current streamliner are dominated by the portfolio
         :param objective_values: Objective values of current streamliner evaluated
@@ -90,19 +93,16 @@ class HydraEval:
         if not cur_portfolio:
             return True
         else:
-            return (
-                sum(
-                    map(
-                        lambda x: self._dominated(x, objective_values),
-                        cur_portfolio.values(),
-                    )
+            return all(
+                map(
+                    lambda x: self._dominated(x, objective_values),
+                    cur_portfolio.values(),
                 )
-                == 0
             )
 
     def _remove_dominated_combinations(
-        self, objective_values: Dict, cur_portfolio: Dict
-    ) -> Dict:
+        self, objective_values: StreamlinerPerformanceMetrics, cur_portfolio: Portfolio
+    ) -> Portfolio:
         return dict(
             filter(
                 lambda x: not self._dominated(objective_values, x[1]),
@@ -110,7 +110,9 @@ class HydraEval:
             )
         )
 
-    def combine_results(self, results: Dict[str, InstanceStats]):
+    def combine_results(
+        self, results: Dict[str, InstanceStats]
+    ) -> Dict[str, InstanceStats]:
         combined_results: Dict[str, InstanceStats] = {}
         for x in results:
             if self._test(results[x], self.__best_instance_results.get(x)):
@@ -126,7 +128,7 @@ class HydraEval:
         results: Dict[str, InstanceStats],
         training_results: pd.DataFrame,
     ) -> int:
-        logging.info("Hydra: Evaluating Streamliner")
+        logging.debug("Hydra: Evaluating Streamliner")
         if len(results) == 0:
             return 0
 
@@ -134,7 +136,7 @@ class HydraEval:
         combined_results = self.combine_results(results)
         objective_values = self._objective_values(combined_results, training_results)
 
-        logging.info(f"{streamliner_combo} has results: {objective_values}")
+        logging.debug(f"{streamliner_combo} has results: {objective_values}")
         if not self.exists_in_portfolio(streamliner_combo) and self._non_dominated(
             objective_values, self.__cur_portfolio
         ):
@@ -162,16 +164,14 @@ class HydraEval:
         with open(filename, "w") as portfolio:
             portfolio.write(json.dumps(self.__cur_portfolio))
 
-    def portfolio(
-        self,
-    ) -> Dict[str, Dict[str, float | np.floating[Any] | list[np.floating[Any]]]]:
+    def portfolio(self) -> Portfolio:
         return self.__cur_portfolio
 
     def _objective_values(
         self,
         results: Dict[str, InstanceStats],
         training_results: pd.DataFrame,
-    ) -> Dict[str, float | np.floating[Any] | list[np.floating[Any]]]:
+    ) -> StreamlinerPerformanceMetrics:
         total_number_of_instances: int = len(training_results["Instance"].unique())
 
         applicability: float = (
@@ -216,7 +216,9 @@ class HydraEval:
             mean_reduction = np.mean(reductions)
             median_reduction = np.median(reductions)
             std_dev = np.std(reductions)
-            quantiles = np.quantile(reductions, [0.25, 0.5, 0.75]).tolist()
+            quantiles: List[np.floating] = np.quantile(
+                reductions, [0.25, 0.5, 0.75]
+            ).tolist()
 
         else:
             mean_reduction = 0

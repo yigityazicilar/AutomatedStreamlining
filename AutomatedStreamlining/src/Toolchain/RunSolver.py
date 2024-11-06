@@ -111,10 +111,8 @@ class RunSolver:
 
             return to_return
         except Exception as e:
-            logging.info(f"RunSolver Output: {output}")
-            logging.info(f"RunSolver Matches: {matches}")
-            logging.info(e)
-            raise Exception()
+            logging.exception(e)
+            raise
 
     # -w /dev/null redirects the watcher output to /dev/null to prevent it filling up memory buffers
     def generate_runsolver_command(self, command, total_time) -> List[str]:

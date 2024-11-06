@@ -10,6 +10,8 @@ import logging
 import pandas as pd
 from Util import unwrap
 
+from Types import Round, Portfolio
+
 
 class HydraPortfolio:
     def __init__(
@@ -27,16 +29,10 @@ class HydraPortfolio:
         self.conf = conf
         self.num_rounds: int = unwrap(conf.get("hydra")).get("num_rounds")
 
-    def build_portfolio(
-        self, portfolio_name: Path
-    ) -> Dict[
-        str, Dict[str, Dict[str, float | np.floating[Any] | list[np.floating[Any]]]]
-    ]:
-        cur_round: int = 0
+    def build_portfolio(self, portfolio_name: Path) -> Dict[Round, Portfolio]:
+        cur_round: Round = 0  # ! I am not sure if the round mechanism is necessary
         best_instance_results: Dict[str, InstanceStats] = {}
-        overall_portfolio: Dict[
-            str, Dict[str, Dict[str, float | np.floating[Any] | list[np.floating[Any]]]]
-        ] = {}
+        overall_portfolio: Dict[Round, Portfolio] = {}
         while True:
             eval = HydraEval(overall_portfolio, best_instance_results)
             search = MOMCTS(
@@ -49,9 +45,8 @@ class HydraPortfolio:
 
             search.search(portfolio_name)
             cur_portfolio = eval.portfolio()
-            overall_portfolio[str(cur_round)] = cur_portfolio
+            overall_portfolio[cur_round] = cur_portfolio
             cur_round += 1
-            # logging.info(overall_portfolio)
             best_instance_results = self.generate_best_instance_stats(overall_portfolio)
 
             if cur_round == self.num_rounds:
@@ -61,9 +56,7 @@ class HydraPortfolio:
     # Generate the best stats for the instances
     def generate_best_instance_stats(
         self,
-        overall_portfolio: Dict[
-            str, Dict[str, Dict[str, float | np.floating[Any] | list[np.floating[Any]]]]
-        ],
+        overall_portfolio: Dict[Round, Portfolio],
     ) -> Dict[str, InstanceStats]:
         best_instance_stats: Dict[str, InstanceStats] = {}
         df: pd.DataFrame = self._streamliner_model_stats.results()

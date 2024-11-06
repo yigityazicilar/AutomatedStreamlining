@@ -12,7 +12,7 @@ from typing import Callable, Dict, Optional, Set
 
 
 def _default_callback(instance: str, data: str):
-    logging.info(instance, data)
+    logging.debug(instance, data)
 
 
 def _default_err_callback(instance: str, err: str):

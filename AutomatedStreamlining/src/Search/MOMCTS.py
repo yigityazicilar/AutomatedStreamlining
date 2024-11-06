@@ -85,18 +85,20 @@ class MOMCTS:
                 to_remove = set()
                 # Check if one is finished and evaluate it. Increment iteration count.
                 for streamliner, future in streamliners_being_run:
-                    logging.info(
-                        f"Checking if streamliner {streamliner} finished running."
-                    )
                     if future.done():
                         try:
                             results, cached = future.result()
+                            logging.info(
+                                f"Simulation completed for streamliner {streamliner}"
+                            )
                         except Exception as _:
                             self._streamliner_state.add_invalid_combination(
                                 current_combination
                             )
                             logging.error(traceback.format_exc())
-                            logging.error("Simulation failed")
+                            logging.error(
+                                f"Simulation failed for streamliner {streamliner}"
+                            )
                             to_remove.add((streamliner, future))
                             continue
 
@@ -108,13 +110,13 @@ class MOMCTS:
 
                         self.eval.save_portfolio_name(
                             portfolio_name.parent
-                            / f"{portfolio_name.stem}Iteration{iteration}.json"
+                            / f"{portfolio_name.stem}Iteration{iteration:03d}.json"
                         )
 
                         self.backprop(streamliner, back_prop_value)
 
                         if cached:
-                            logging.info("Cached result")
+                            logging.info(f"Streamliner {streamliner} has been cached")
                         else:
                             iteration += 1
                             logging.info(
@@ -124,12 +126,11 @@ class MOMCTS:
                 for remove in to_remove:
                     streamliners_being_run.remove(remove)
 
-            logging.info(f"Current queue size {self.executor._work_queue.qsize()}")
+            logging.debug(f"Current queue size {self.executor._work_queue.qsize()}")
             if (
                 self.executor._work_queue.qsize() <= thread_count
                 and iteration < maximum_iteration
             ):
-                logging.info(f"Adding new streamliners to the queue")
                 current_combination, possible_adjacent_streamliners = self.selection()
                 new_combination_added: str = self.expansion(
                     current_combination, list(possible_adjacent_streamliners)
@@ -137,6 +138,8 @@ class MOMCTS:
 
                 if new_combination_added in streamliners_being_run:
                     continue
+
+                logging.info(f"Adding streamliner {new_combination_added} to the queue")
 
                 simulation_future = self.eval_executor.submit(
                     self.simulation, new_combination_added
@@ -230,7 +233,6 @@ class MOMCTS:
     def simulation(self, new_combination: str) -> Tuple[Dict[str, InstanceStats], bool]:
         logging.debug("------SIMULATION------")
         streamliner_results_df = self.streamliner_model_stats.results()
-        logging.info(f"New combo {new_combination}")
 
         instances_left_to_eval: Set[Path] = set()
         instances_in_results: Set[str] = set(

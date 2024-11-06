@@ -22,7 +22,6 @@ class SavileRow:
             "-preprocess",
             "None",
         ]
-        logging.info(command)
         return command
 
     def parse_std_out(self, out, instance_stats):

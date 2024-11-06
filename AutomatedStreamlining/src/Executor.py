@@ -6,7 +6,7 @@ from typing import List, Optional
 
 def callable(command: List[str]) -> Optional[tuple[bytes, bytes, float]]:
     try:
-        logging.info(f"Command {command}")
+        logging.debug(f"Command {command}")
         time_before = time.time()
         process = subprocess.Popen(
             command, stdout=subprocess.PIPE, stderr=subprocess.PIPE
@@ -14,7 +14,7 @@ def callable(command: List[str]) -> Optional[tuple[bytes, bytes, float]]:
         out, err = process.communicate()
         time_taken = time.time() - time_before
 
-        logging.info(f"Time taken for command: {time_taken}")
+        logging.debug(f"Time taken for command: {time_taken}")
         return out, err, time_taken
     except subprocess.CalledProcessError as e:
         if e.stdout:

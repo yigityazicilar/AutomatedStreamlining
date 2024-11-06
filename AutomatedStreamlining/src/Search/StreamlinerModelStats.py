@@ -28,12 +28,12 @@ class StreamlinerModelStats:
                 "Solver": self.solver.get_solver_name(),
             }
             for stage_name, stage in instance_stages.items():
-                
                 for key, value in stage.keys().items():
                     combined_keys[f"{stage_name}_{key}"] = value
 
             for key, value in result.solver_stats().items():
                 combined_keys[f"solver_{key}"] = value
+
             combined_keys_df = pd.DataFrame(combined_keys, index=[0])
             if self.streamliner_model_stats.empty:
                 self.streamliner_model_stats = combined_keys_df
@@ -41,6 +41,7 @@ class StreamlinerModelStats:
                 self.streamliner_model_stats = pd.concat(
                     [self.streamliner_model_stats, combined_keys_df], ignore_index=True
                 )
+
             self.streamliner_model_stats.to_csv(
                 f"{self.streamliner_model_stats_file}.bak", index=False
             )

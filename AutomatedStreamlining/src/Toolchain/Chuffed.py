@@ -44,9 +44,6 @@ class Chuffed(Solver):
         instance_stats.set_solver_name(self.get_solver_name())
         instance_stats.set_satisfiable(bool(stats["satisfiable"]))  # Convert to boolean
 
-        logging.debug(f"Removing {output_file}")
-        pathlib.Path(os.path.join("/", output_file)).unlink(missing_ok=True)
-
         return stats
 
     def parse_std_err(self, out: bytes, instance_stats: InstanceStats):

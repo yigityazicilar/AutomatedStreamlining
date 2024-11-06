@@ -24,7 +24,7 @@ class Stage:
         parse_std_err_callable: Callable,
         args: tuple,
     ):
-        logging.info(f"Stage callable {stage_callable}")
+        logging.debug(f"Stage callable {stage_callable}")
         self.name: str = name
         self.stage_callable: Callable = stage_callable
         self.args: tuple = args
@@ -135,7 +135,7 @@ class Pipeline:
 
     def _call(self, stage, instance_stats):
         if self.event.is_set():
-            logging.debug("Event is set, skipping stage")
+            logging.info("Event is set, skipping stage")
             return
         command = stage.stage_callable(*stage.args)
         runsolver: RunSolver = RunSolver(threading.get_ident(), stage.get_name())
@@ -147,7 +147,6 @@ class Pipeline:
         )
 
         outs, errs = self._run_stage(stage, runsolver_command, instance_stats)
-        logging.debug("Ran the command")
 
         # Grab runsolver related stats
         runsolver_stats = runsolver.grab_runsolver_stats()

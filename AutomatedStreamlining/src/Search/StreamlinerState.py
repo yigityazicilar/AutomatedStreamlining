@@ -106,5 +106,5 @@ class StreamlinerState:
         return "-".join(str(i) for i in sorted(int(s) for s in streamliner_combo))
 
     def add_invalid_combination(self, combination: Set[str]) -> None:
-        logging.info("Adding invalid combination")
+        logging.debug(f"Adding invalid combination {combination}")
         self.invalid_combinations.add(frozenset(combination))
