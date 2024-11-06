@@ -16,7 +16,7 @@ from sklearn.model_selection import KFold
 from enum import Enum
 
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format="%(asctime)s %(levelname)s:\t%(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
