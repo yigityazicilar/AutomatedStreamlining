@@ -119,6 +119,9 @@ class MOMCTS:
                             logging.info(f"Streamliner {streamliner} has been cached")
                         else:
                             iteration += 1
+                            self._lattice.save_graph(
+                                self.working_directory / f"lattice.gexf"
+                            )
                             logging.info(
                                 f"Iteration {iteration} out of {maximum_iteration}"
                             )
