@@ -135,6 +135,8 @@ class HydraEval:
         if len(results) == 0:
             return 0
 
+        logging.info(f"Results: {results}")
+
         # Combine the results of the current portfolio with the new streamliner
         combined_results = self.combine_results(results)
         objective_values = self._objective_values(combined_results, training_results)
