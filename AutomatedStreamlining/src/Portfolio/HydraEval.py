@@ -93,11 +93,14 @@ class HydraEval:
         if not cur_portfolio:
             return True
         else:
-            return all(
-                map(
-                    lambda x: self._dominated(x, objective_values),
-                    cur_portfolio.values(),
+            return (
+                sum(
+                    map(
+                        lambda x: self._dominated(x, objective_values),
+                        cur_portfolio.values(),
+                    )
                 )
+                == 0
             )
 
     def _remove_dominated_combinations(
