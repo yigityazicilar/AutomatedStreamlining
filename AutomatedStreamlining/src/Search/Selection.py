@@ -1,4 +1,4 @@
-from typing import Any, List, Set, Dict
+from typing import Any, Set, Dict
 import math
 from Search.Lattice import Lattice
 import Util
@@ -8,13 +8,13 @@ class UCTSelection:
     UCT_EXPLORATION_CONSTANT: float = 0.1
 
     def select(
-        self, lattice: Lattice, current_combination: Set[str], adjacent_nodes: List[str]
+        self, lattice: Lattice, current_combination: Set[str], adjacent_nodes: Set[str]
     ) -> str:
         uct_values = self.uct_values(lattice, current_combination, adjacent_nodes)
         return sorted(uct_values.keys(), key=lambda x: uct_values[x], reverse=True)[0]
 
     def uct_values(
-        self, lattice: Lattice, current_combination: Set[str], adjacent_nodes: List[str]
+        self, lattice: Lattice, current_combination: Set[str], adjacent_nodes: Set[str]
     ) -> Dict[str, float]:
         uct_values: Dict[str, float] = {}
         combination_str_repr: str = Util.get_streamliner_repr_from_set(

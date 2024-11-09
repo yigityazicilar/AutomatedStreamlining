@@ -23,6 +23,7 @@ from functools import partial
 from Search.Selection import UCTSelection
 from Util import unwrap
 import concurrent.futures
+from concurrent.futures import Future
 
 
 class MOMCTS:
@@ -66,6 +67,7 @@ class MOMCTS:
         )
         self.eval_executor = concurrent.futures.ThreadPoolExecutor()
         self.event = threading.Event()
+        self._random = random.Random(42 * 2)
 
         # if not self.streamliner_model_stats.results().empty:
         #     self._simulate_existing_streamliners()
@@ -82,7 +84,7 @@ class MOMCTS:
         thread_count = self.conf["executor"]["num_cores"]
         while not self.event.is_set():
             if len(streamliners_being_run) > 0:
-                to_remove = set()
+                to_remove: Set[Tuple[str, Future[Tuple[Dict[str, InstanceStats], bool]]]] = set()
                 # Check if one is finished and evaluate it. Increment iteration count.
                 for streamliner, future in streamliners_being_run:
                     if future.done():
@@ -93,7 +95,7 @@ class MOMCTS:
                             )
                         except Exception as _:
                             self._streamliner_state.add_invalid_combination(
-                                current_combination
+                                set(streamliner.split("-"))
                             )
                             logging.error(traceback.format_exc())
                             logging.error(
@@ -130,6 +132,7 @@ class MOMCTS:
                     streamliners_being_run.remove(remove)
 
             logging.debug(f"Current queue size {self.executor._work_queue.qsize()}")
+
             if (
                 self.executor._work_queue.qsize() <= thread_count
                 and iteration < maximum_iteration
@@ -139,7 +142,7 @@ class MOMCTS:
                     current_combination, list(possible_adjacent_streamliners)
                 )
 
-                if new_combination_added in streamliners_being_run:
+                if new_combination_added in set([s for s, _ in streamliners_being_run]):
                     continue
 
                 logging.info(f"Adding streamliner {new_combination_added} to the queue")
@@ -173,15 +176,21 @@ class MOMCTS:
             )
 
             # Find the adjacent nodes in the Lattice to our current combination
-            adjacent_nodes: List[str] = list(
-                self._lattice.get_graph().neighbors(combination_str_repr)
+            adjacent_nodes_list: List[str] = list(
+                self._lattice.get_graph().neighbors(combination_str_repr) # type: ignore
             )
 
+            adjacent_nodes: Set[str] = set([
+                next(iter(set(adjacent_node.split("-")) - current_combination))
+                for adjacent_node in adjacent_nodes_list
+            ])
+            
             # Calculate if all possible children exist in the Lattice
-            set_diff = set(possible_adjacent_combinations) - set(adjacent_nodes)
+            set_diff = possible_adjacent_combinations - adjacent_nodes
 
             # If not all children have been created, stop and expand this node
             if len(set_diff) > 0:
+                # todo Potentially add some heuristic here to choose 
                 logging.debug(
                     f"Not all children have been created. Returning {current_combination}"
                 )
@@ -198,7 +207,7 @@ class MOMCTS:
     ) -> str:
         logging.debug("------EXPANSION------")
         new_candidate: str = possible_adjacent_nodes[
-            random.randint(0, len(possible_adjacent_nodes) - 1)
+            self._random.randint(0, len(possible_adjacent_nodes) - 1)
         ]
 
         direct_parent_combination_str = (
@@ -258,7 +267,7 @@ class MOMCTS:
             ]
             base_results = {}
             for _, row in results.iterrows():
-                base_results[row["Instance"]] = translate_to_instance_stats(row)
+                base_results[row["Instance"]] = translate_to_instance_stats(row) # type: ignore
 
             if len(results) >= len(self.training_results["Instance"]):
                 return base_results, True
@@ -274,6 +283,8 @@ class MOMCTS:
             )
             # Instances that have not been run yet. Allows for midway restarts
             instances_to_run.intersection_update(instances_left_to_eval)
+
+            # instances_to_run = instances_left_to_eval
 
             if len(instances_to_run) == 0:
                 return {}, False

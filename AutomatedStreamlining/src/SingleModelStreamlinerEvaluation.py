@@ -89,7 +89,7 @@ class SingleModelStreamlinerEvaluation:
                 break
 
             instance = futures[future]
-            try:
+            try: 
                 data: InstanceStats = future.result()
                 results[instance] = data
                 # Call the callback method passed in

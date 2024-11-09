@@ -3,7 +3,7 @@ from Toolchain.Chuffed import Chuffed
 from Toolchain.Cadical import Cadical
 
 
-def get_solver(solver) -> Solver:
+def get_solver(solver: str) -> Solver:
     if solver == "chuffed":
         return Chuffed()
     elif solver == "cadical":

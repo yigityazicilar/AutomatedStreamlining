@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Any, Dict
 from Toolchain.RunSolver import RunSolverStats, translate_to_runsolver_stats
 
 
@@ -63,7 +63,7 @@ class InstanceStats:
           """
 
 
-def translate_to_instance_stats(result):
+def translate_to_instance_stats(result: Dict[str, Any]):
     solver = result["Solver"]
     conjure_stats = translate_to_runsolver_stats(
         dict(filter(lambda item: "conjure" in item[0], result.items())), "conjure"

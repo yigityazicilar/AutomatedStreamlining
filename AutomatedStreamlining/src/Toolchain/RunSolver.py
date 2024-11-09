@@ -68,7 +68,7 @@ class RunSolverStats:
             'Timeout' : {self._time_out}
         """
 
-    def keys(self):
+    def keys(self) -> Dict[str, float | bool]:
         return {
             "RealTime": self._real_time,
             "CPUTime": self._cpu_time,
@@ -115,7 +115,7 @@ class RunSolver:
             raise
 
     # -w /dev/null redirects the watcher output to /dev/null to prevent it filling up memory buffers
-    def generate_runsolver_command(self, command, total_time) -> List[str]:
+    def generate_runsolver_command(self, command: List[str], total_time: int) -> List[str]:
         return [
             "runsolver",
             "-v",
