@@ -1,6 +1,6 @@
 import copy
 import glob
-from itertools import combinations
+from itertools import chain, combinations
 from pathlib import Path
 import threading
 import time
@@ -21,7 +21,7 @@ import pandas as pd
 from functools import partial
 
 from Search.Selection import UCTSelection
-from Util import unwrap
+from Util import get_streamliner_repr_from_set, unwrap
 import concurrent.futures
 
 
@@ -291,6 +291,7 @@ class MOMCTS:
             callback = partial(self.streamliner_model_stats.callback, new_combination)
             # We now need to parse these results into some format that we can use as a reference point
             base_results = streamlinerEval.execute(callback=callback)
+            print(str(base_results))
 
             return base_results, False
         else:
@@ -320,9 +321,16 @@ class MOMCTS:
     def _get_instances_to_run(
         self, streamliner_comb: str, streamliner_results_df: pd.DataFrame
     ) -> Set[Path]:
+        # ! Use combinations to get all combinations and if they are in the lattice intersect them.
         combination_set = set(streamliner_comb.split("-"))
         if len(combination_set) == 1:
             return set(self.training_instances)
+        
+        def powerset(iterable):
+            s = list(iterable)
+            return chain.from_iterable(combinations(s, r) for r in range(1, len(s) + 1))
+        
+        all_combinations: List[Tuple[str, ...]] = list(powerset(combination_set))
 
         def get_valid_instances_for_streamliner(streamliner: str) -> Set[str]:
             """Helper function to get valid instances for a given streamliner."""
@@ -332,13 +340,13 @@ class MOMCTS:
             )
             return set(streamliner_results_df.loc[mask]["Instance"])
 
-        first_streamliner = next(iter(combination_set))
+        first_streamliner = get_streamliner_repr_from_set(set(all_combinations[0]))
         instances_to_run_str = get_valid_instances_for_streamliner(first_streamliner)
 
         # Intersect with remaining streamliners
-        for streamliner in list(combination_set)[1:]:
+        for streamliner in list(all_combinations)[1:]:
             instances_to_run_str.intersection_update(
-                get_valid_instances_for_streamliner(streamliner)
+                get_valid_instances_for_streamliner(get_streamliner_repr_from_set(set(streamliner)))
             )
 
         instances_to_run = set()
