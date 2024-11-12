@@ -84,7 +84,7 @@ class StreamlinerState:
                 # Check if combination would be invalid
                 combination: Set[str] = set([candidate]) | streamliner_combination
                 if any(
-                    invalid_set == combination
+                    invalid_set == frozenset(combination)
                     for invalid_set in self.invalid_combinations
                 ):
                     invalid_candidates.add(candidate)

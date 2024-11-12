@@ -2,13 +2,12 @@ import logging
 from pathlib import Path
 import os, glob, sys
 import threading
-from matplotlib.pylab import f
 import pandas as pd
 from Toolchain.InstanceStats import InstanceStats
 from SingleModelStreamlinerEvaluation import SingleModelStreamlinerEvaluation
 from Toolchain.Conjure import Conjure
 from Toolchain.Solver import Solver
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Set
 from concurrent.futures import ThreadPoolExecutor
 
 
@@ -112,7 +111,7 @@ class BaseModelStats:
         instances_to_eval_str = set(self.training_instances) - set(
             self.training_df["Instance"]
         )
-        instances_to_eval = set()
+        instances_to_eval: Set[Path] = set()
         for instance in instances_to_eval_str:
             instances_to_eval.add(
                 next(
