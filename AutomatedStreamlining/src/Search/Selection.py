@@ -2,6 +2,7 @@ from typing import Any, Set, Dict
 import math
 from Search.Lattice import Lattice
 import Util
+import logging
 
 
 class UCTSelection:
@@ -24,27 +25,40 @@ class UCTSelection:
             combination_str_repr
         ]
 
+        # Work with a copy to avoid modifying the original
+        temp_combination = current_combination.copy()
+
         for node in adjacent_nodes:
-            current_combination.add(node)
+            temp_combination.add(node)
             streamliner_combo: str = Util.get_streamliner_repr_from_set(
-                current_combination
+                temp_combination
             )
-            cur_attributes: Dict[str, Any] = lattice.get_graph().nodes[
-                streamliner_combo
-            ]
+            logging.debug(f"Processing node {node} in combination {streamliner_combo}")
 
-            # print(f"Current Attributes: {cur_attributes}")
+            if lattice.get_graph().has_node(streamliner_combo):
+                cur_attributes: Dict[str, Any] = lattice.get_graph().nodes[
+                    streamliner_combo
+                ]
 
-            if cur_attributes["visited_count"] > 0:
-                uct_values[node] = (
-                    cur_attributes["score"] / cur_attributes["visited_count"]
-                ) + self.UCT_EXPLORATION_CONSTANT * math.sqrt(
-                    math.log(parent_node_attributes["visited_count"])
-                    / cur_attributes["visited_count"]
-                )
+                if cur_attributes["visited_count"] > 0:
+                    uct_values[node] = (
+                        cur_attributes["score"] / cur_attributes["visited_count"]
+                    ) + self.UCT_EXPLORATION_CONSTANT * math.sqrt(
+                        math.log(parent_node_attributes["visited_count"])
+                        / cur_attributes["visited_count"]
+                    )
+                else:
+                    # ! This section should never be reached but to be safe we will keep it.
+                    logging.debug(
+                        f"Node {streamliner_combo} has not been visited, setting UCT to inf"
+                    )
+                    uct_values[node] = float("inf")
             else:
+                logging.debug(
+                    f"Node {streamliner_combo} not found in graph, setting UCT to inf"
+                )
                 uct_values[node] = float("inf")
 
-            current_combination.remove(node)
+            temp_combination.remove(node)
 
         return uct_values

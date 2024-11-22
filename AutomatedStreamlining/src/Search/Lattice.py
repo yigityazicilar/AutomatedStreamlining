@@ -24,6 +24,7 @@ class Lattice:
             node_combination,
             visited_count=0,
             score=0,
+            is_leaf=False,
             created=self.__created,
         )
         self.__created += 1

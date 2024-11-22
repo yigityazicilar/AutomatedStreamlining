@@ -136,44 +136,44 @@ def train(
     conf: Dict[str, Any],
     solver: Solver,
 ):
-    _, _, instances = next(os.walk(instance_dir))
-    k_fold = KFold(n_splits=5, shuffle=True, random_state=42)
-    train_test_iterator = k_fold.split(instances)
+    # _, _, instances = next(os.walk(instance_dir))
+    # k_fold = KFold(n_splits=5, shuffle=True, random_state=42)
+    # train_test_iterator = k_fold.split(instances)
 
-    train_set, test_set = list(train_test_iterator)[fold_num]
-    train_dir = instance_dir / "Train"
-    test_dir = instance_dir / "Test"
-    validation_dir = instance_dir / "Validation"
-    os.makedirs(train_dir, exist_ok=True)
-    os.makedirs(test_dir, exist_ok=True)
-    os.makedirs(validation_dir, exist_ok=True)
+    # train_set, test_set = list(train_test_iterator)[fold_num]
+    # train_dir = instance_dir / "Train"
+    # test_dir = instance_dir / "Test"
+    # validation_dir = instance_dir / "Validation"
+    # os.makedirs(train_dir, exist_ok=True)
+    # os.makedirs(test_dir, exist_ok=True)
+    # os.makedirs(validation_dir, exist_ok=True)
 
-    random.seed(42 + fold_num)
+    # random.seed(42 + fold_num)
 
-    for i in train_set:
-        if random.random() < 0.5:
-            shutil.copyfile(
-                instance_dir / instances[i],
-                validation_dir / instances[i],
-            )
-        else:
-            shutil.copyfile(
-                instance_dir / instances[i],
-                train_dir / instances[i],
-            )
+    # for i in train_set:
+    #     if random.random() < 0.5:
+    #         shutil.copyfile(
+    #             instance_dir / instances[i],
+    #             validation_dir / instances[i],
+    #         )
+    #     else:
+    #         shutil.copyfile(
+    #             instance_dir / instances[i],
+    #             train_dir / instances[i],
+    #         )
 
-    for i in test_set:
-        shutil.copyfile(
-            instance_dir / instances[i],
-            test_dir / instances[i],
-        )
+    # for i in test_set:
+    #     shutil.copyfile(
+    #         instance_dir / instances[i],
+    #         test_dir / instances[i],
+    #     )
 
-    conf["instance_directory"] = train_dir
+    conf["instance_directory"] = instance_dir
 
     baseModelStats = BaseModelStats(
         working_directory / "BaseModelResults.csv",
         working_directory,
-        train_dir,
+        instance_dir,
         solver,
     )
     baseModelStats.evaluate_training_instances(essence_spec, conf)

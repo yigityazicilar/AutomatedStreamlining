@@ -13,3 +13,7 @@ streamline
 params/
 conjure-output/
 params_filtered/
+*.json
+*.csv.bak
+*.gexf
+StreamlinerModelStats*.csv

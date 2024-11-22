@@ -4,6 +4,7 @@ from itertools import chain, combinations
 from pathlib import Path
 import threading
 import time
+from turtle import pos
 
 from Toolchain.SolverFactory import get_solver
 from Search.StreamlinerModelStats import StreamlinerModelStats
@@ -69,6 +70,7 @@ class MOMCTS:
         self.event = threading.Event()
         self._random = random.Random(42 * 2)
 
+
         # if not self.streamliner_model_stats.results().empty:
         #     self._simulate_existing_streamliners()
 
@@ -84,7 +86,9 @@ class MOMCTS:
         thread_count = self.conf["executor"]["num_cores"]
         while not self.event.is_set():
             if len(streamliners_being_run) > 0:
-                to_remove: Set[Tuple[str, Future[Tuple[Dict[str, InstanceStats], bool]]]] = set()
+                to_remove: Set[
+                    Tuple[str, Future[Tuple[Dict[str, InstanceStats], bool]]]
+                ] = set()
                 # Check if one is finished and evaluate it. Increment iteration count.
                 for streamliner, future in streamliners_being_run:
                     if future.done():
@@ -138,11 +142,18 @@ class MOMCTS:
                 and iteration < maximum_iteration
             ):
                 current_combination, possible_adjacent_streamliners = self.selection()
+                if len(current_combination) == 0 and len(possible_adjacent_streamliners) == 0:
+                    logging.info("No expandable nodes remain. Waiting for the running ones to finish.")
+                    time.sleep(1)
+                    continue
+
                 new_combination_added: str = self.expansion(
                     current_combination, list(possible_adjacent_streamliners)
                 )
 
                 if new_combination_added in set([s for s, _ in streamliners_being_run]):
+                    logging.info(f"Combination {new_combination_added} is already running.")
+                    time.sleep(1)
                     continue
 
                 logging.info(f"Adding streamliner {new_combination_added} to the queue")
@@ -155,52 +166,129 @@ class MOMCTS:
             if iteration >= maximum_iteration and len(streamliners_being_run) == 0:
                 return
 
-            time.sleep(5)
+            time.sleep(1)
 
     def selection(self) -> Tuple[Set[str], Set[str]]:
-        logging.debug("------SELECTION-----")
+        logging.debug("------SELECTION START-----")
         current_combination: Set[str] = set()
+        path_taken: List[str] = []  # Track the path we've taken
 
         while True:
+            logging.info(f"\nSelection iteration:")
+            logging.info(f"Current combination: {current_combination}")
+            logging.info(f"Current path: {path_taken}")
+            
             # Get streamliners that we can combine with our current combination
             possible_adjacent_combinations: Set[str] = (
                 self._streamliner_state.get_possible_adjacent_streamliners(
                     current_combination
                 )
             )
+            logging.info(f"Possible adjacent combinations: {possible_adjacent_combinations}")
 
-            combination_str_repr: str = (
-                self._streamliner_state.get_streamliner_repr_from_set(
+            # If no possible adjacent combinations and not at root, backtrack
+            if len(possible_adjacent_combinations) == 0:
+                logging.info("No possible adjacent combinations found")
+                if len(current_combination) == 0:
+                    logging.info("At root with no moves, ending selection")
+                    return set(), set()
+                
+                # Store this as a leaf node
+                leaf_node = self._streamliner_state.get_streamliner_repr_from_set(
                     current_combination
                 )
-            )
+                logging.info(f"Marking node {leaf_node} as leaf node")
+                
+                if self._lattice.has_node(leaf_node):
+                    self._lattice.get_graph().nodes[leaf_node]['is_leaf'] = True
+                    logging.info(f"Node {leaf_node} marked as leaf in lattice")
+                else:
+                    logging.warning(f"Node {leaf_node} not found in lattice")
+                
+                # Backtrack by removing last added streamliner
+                if path_taken:
+                    last_added = path_taken.pop()
+                    logging.info(f"Backtracking: removing {last_added} from combination")
+                    current_combination.remove(last_added)
+                    logging.info(f"After backtrack - combination: {current_combination}, path: {path_taken}")
+                else:
+                    logging.warning("Attempting to backtrack but path_taken is empty")
+                continue
 
-            # Find the adjacent nodes in the Lattice to our current combination
-            adjacent_nodes_list: List[str] = list(
-                self._lattice.get_graph().neighbors(combination_str_repr) # type: ignore
+            logging.info("Calculating UCT values")
+            uct_values = self.selection_class.uct_values(
+                self._lattice, current_combination, possible_adjacent_combinations
             )
+            uct_values_sorted = sorted(
+                uct_values.items(), key=lambda x: x[1], reverse=True
+            )
+            logging.info(f"UCT values (sorted): {uct_values_sorted}")
 
-            adjacent_nodes: Set[str] = set([
-                next(iter(set(adjacent_node.split("-")) - current_combination))
-                for adjacent_node in adjacent_nodes_list
-            ])
+            unexpanded_nodes: Set[str] = set()
+            for node, score in uct_values_sorted:
+                if score == float("inf"):
+                    temp_combination = current_combination | {node}
+                    temp_str = self._streamliner_state.get_streamliner_repr_from_set(
+                        temp_combination
+                    )
+                    logging.info(f"Checking if {temp_str} is a leaf node")
+                    
+                    is_in_lattice = self._lattice.has_node(temp_str)
+                    if is_in_lattice:
+                        is_leaf = self._lattice.get_graph().nodes[temp_str]['is_leaf']
+                        logging.debug(f"Node {temp_str} in lattice: {is_in_lattice}, is_leaf: {is_leaf}")
+                        if not is_leaf:
+                            unexpanded_nodes.add(node)
+                            logging.info(f"Added {node} to unexpanded nodes")
+                    else:
+                        unexpanded_nodes.add(node)
+                        logging.info(f"Added {node} to unexpanded nodes (not in lattice)")
+
+            logging.info(f"Unexpanded nodes found: {unexpanded_nodes}")
+            if len(unexpanded_nodes) > 0:
+                logging.info(f"Returning current_combination {current_combination} with unexpanded nodes {unexpanded_nodes}")
+                return current_combination, unexpanded_nodes
+
+            # Get next node, avoiding known leaf paths
+            logging.info("Finding valid moves")
+            valid_moves = []
+            for node, score in uct_values_sorted:
+                temp_combination = current_combination | {node}
+                temp_str = self._streamliner_state.get_streamliner_repr_from_set(
+                    temp_combination
+                )
+                
+                if self._lattice.has_node(temp_str):
+                    is_leaf = self._lattice.get_graph().nodes[temp_str]['is_leaf']
+                    if not is_leaf:
+                        valid_moves.append(node)
+                        logging.info(f"Added {node} to valid moves")
+                    else:
+                        logging.info(f"Skipping {node} as it leads to leaf node")
+                else:
+                    valid_moves.append(node)
+                    logging.info(f"Added {node} to valid moves (not in lattice)")
             
-            # Calculate if all possible children exist in the Lattice
-            set_diff = possible_adjacent_combinations - adjacent_nodes
+            logging.info(f"Valid moves found: {valid_moves}")
+            if not valid_moves:
+                logging.info("No valid moves found, attempting to backtrack")
+                if len(current_combination) == 0:
+                    logging.info("At root with no valid moves, ending selection")
+                    return set(), set()
+                if path_taken:
+                    last_added = path_taken.pop()
+                    logging.info(f"Backtracking: removing {last_added}")
+                    current_combination.remove(last_added)
+                    logging.info(f"After backtrack - combination: {current_combination}, path: {path_taken}")
+                else:
+                    logging.warning("Attempting to backtrack but path_taken is empty")
+                continue
 
-            # If not all children have been created, stop and expand this node
-            if len(set_diff) > 0:
-                # todo Potentially add some heuristic here to choose 
-                logging.debug(
-                    f"Not all children have been created. Returning {current_combination}"
-                )
-                return current_combination, set_diff
-            # Else move down the Lattice and continue to select
-            else:
-                node = self.selection_class.select(
-                    self._lattice, current_combination, adjacent_nodes
-                )
-                current_combination.add(node)
+            highest_score_node = valid_moves[0]
+            logging.info(f"Selected move: {highest_score_node}")
+            current_combination.add(highest_score_node)
+            path_taken.append(highest_score_node)
+            logging.info(f"Updated state - combination: {current_combination}, path: {path_taken}")
 
     def expansion(
         self, current_node_combination: Set[str], possible_adjacent_nodes: List[str]
@@ -267,7 +355,7 @@ class MOMCTS:
             ]
             base_results = {}
             for _, row in results.iterrows():
-                base_results[row["Instance"]] = translate_to_instance_stats(row) # type: ignore
+                base_results[row["Instance"]] = translate_to_instance_stats(row)  # type: ignore
 
             if len(results) >= len(self.training_results["Instance"]):
                 return base_results, True
@@ -302,7 +390,6 @@ class MOMCTS:
             callback = partial(self.streamliner_model_stats.callback, new_combination)
             # We now need to parse these results into some format that we can use as a reference point
             base_results = streamlinerEval.execute(callback=callback)
-            print(str(base_results))
 
             return base_results, False
         else:
@@ -336,11 +423,11 @@ class MOMCTS:
         combination_set = set(streamliner_comb.split("-"))
         if len(combination_set) == 1:
             return set(self.training_instances)
-        
+
         def powerset(iterable):
             s = list(iterable)
             return chain.from_iterable(combinations(s, r) for r in range(1, len(s) + 1))
-        
+
         all_combinations: List[Tuple[str, ...]] = list(powerset(combination_set))
 
         def get_valid_instances_for_streamliner(streamliner: str) -> Set[str]:
@@ -357,7 +444,9 @@ class MOMCTS:
         # Intersect with remaining streamliners
         for streamliner in list(all_combinations)[1:]:
             instances_to_run_str.intersection_update(
-                get_valid_instances_for_streamliner(get_streamliner_repr_from_set(set(streamliner)))
+                get_valid_instances_for_streamliner(
+                    get_streamliner_repr_from_set(set(streamliner))
+                )
             )
 
         instances_to_run = set()
