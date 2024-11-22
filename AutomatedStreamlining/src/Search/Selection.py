@@ -12,7 +12,13 @@ class UCTSelection:
         self, lattice: Lattice, current_combination: Set[str], adjacent_nodes: Set[str]
     ) -> str:
         uct_values = self.uct_values(lattice, current_combination, adjacent_nodes)
-        return sorted(uct_values.keys(), key=lambda x: uct_values[x], reverse=True)[0]
+        selected_node = sorted(
+            uct_values.keys(), key=lambda x: uct_values[x], reverse=True
+        )[0]
+        logging.debug(
+            f"Node {selected_node} selected with UCT value {uct_values[selected_node]}"
+        )
+        return selected_node
 
     def uct_values(
         self, lattice: Lattice, current_combination: Set[str], adjacent_nodes: Set[str]
@@ -25,40 +31,27 @@ class UCTSelection:
             combination_str_repr
         ]
 
-        # Work with a copy to avoid modifying the original
-        temp_combination = current_combination.copy()
-
         for node in adjacent_nodes:
-            temp_combination.add(node)
+            updated_combination = current_combination | {
+                node
+            }  # Create a new combination set
             streamliner_combo: str = Util.get_streamliner_repr_from_set(
-                temp_combination
+                updated_combination
             )
-            logging.debug(f"Processing node {node} in combination {streamliner_combo}")
+            cur_attributes: Dict[str, Any] = lattice.get_graph().nodes[
+                streamliner_combo
+            ]
 
-            if lattice.get_graph().has_node(streamliner_combo):
-                cur_attributes: Dict[str, Any] = lattice.get_graph().nodes[
-                    streamliner_combo
-                ]
-
-                if cur_attributes["visited_count"] > 0:
-                    uct_values[node] = (
-                        cur_attributes["score"] / cur_attributes["visited_count"]
-                    ) + self.UCT_EXPLORATION_CONSTANT * math.sqrt(
-                        math.log(parent_node_attributes["visited_count"])
-                        / cur_attributes["visited_count"]
-                    )
-                else:
-                    # ! This section should never be reached but to be safe we will keep it.
-                    logging.debug(
-                        f"Node {streamliner_combo} has not been visited, setting UCT to inf"
-                    )
-                    uct_values[node] = float("inf")
-            else:
-                logging.debug(
-                    f"Node {streamliner_combo} not found in graph, setting UCT to inf"
+            # Calculate the UCT value
+            if cur_attributes["visited_count"] > 0:
+                uct_values[node] = (
+                    cur_attributes["score"] / cur_attributes["visited_count"]
+                ) + self.UCT_EXPLORATION_CONSTANT * math.sqrt(
+                    math.log(parent_node_attributes["visited_count"])
+                    / cur_attributes["visited_count"]
                 )
+            else:
                 uct_values[node] = float("inf")
 
-            temp_combination.remove(node)
-
+        logging.debug(f"UCT values calculated: {uct_values}")
         return uct_values
